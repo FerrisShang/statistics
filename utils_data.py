@@ -66,7 +66,6 @@ class StocksBasicInfo:
         info_list = BaoStock.query_basic()
         BaoStock.logout()
         for line in info_list:
-            print(line)
             info = StockBasicInfo(*line)
             self.infolist[info.key] = info
         return True
@@ -217,7 +216,7 @@ class DataD:
         self.volume = int(volume)
         self.amount = float(amount)
         self.adjust_flag = int(adjust_flag)
-        self.turn = float(turn)
+        self.turn = float(turn) if turn != '' else 0.0
         self.trade_status = bool(trade_status)
         self.pctChg = float(pctChg)  # 涨跌幅
         self.peTTM = float(peTTM)  # 动态市盈率
@@ -304,4 +303,6 @@ class StockUpdateRecord:
 
 if __name__ == '__main__':
     BaoStock.login()
+    stock_update = StockUpdateRecord('sh.600000')
+    stock_update.update_kd()
     BaoStock.logout()

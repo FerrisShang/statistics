@@ -48,8 +48,8 @@ class BaoStock:
         return BaoStock.query_history_k_data(code, fields, start_date, end_date, frequency='5')
 
     @staticmethod
-    def query_stock_industry(code):
-        rs = bs.query_stock_industry(code)
+    def query_stock_industry(code='', date=''):
+        rs = bs.query_stock_industry(code, date)
         assert('0' == rs.error_code)
         return BaoStock.rs_to_list(rs)
 
@@ -71,8 +71,11 @@ class BaoStock:
         assert('0' == rs.error_code)
         return BaoStock.rs_to_list(rs)
 
+
 if __name__ == '__main__':
     BaoStock.login()
-    for x in BaoStock.query_hist_kd('sz.300223', '2018-11-01'):
+    for x in BaoStock.query_hist_kd('sh.600000', '2018-10-01'):
+        print(x)
+    for x in BaoStock.query_stock_industry():
         print(x)
     BaoStock.logout()
