@@ -5,6 +5,7 @@ from utils_config import UtilsConfig
 from enum import IntEnum
 from struct import pack, unpack
 from utils_baostock import *
+from copy import deepcopy
 
 
 __all__ = [
@@ -14,10 +15,13 @@ __all__ = [
     'StockStatus',
     'StockBasicInfo',
     'StocksBasicInfo',
+    'StockSuperiorInfo',
+    'StocksSuperiorInfo',
+    'StockIndustryInfo',
+    'StocksIndustryInfo',
     'StockData',
     'StockUpdateRecord',
 ]
-
 
 class StockType(IntEnum):
     STOCK = 1
@@ -51,20 +55,18 @@ class StocksBasicInfo:
     def load_from_file(self, file_name='default.list'):
         path = UtilsConfig.get_stock_list_path(file_name)
         if path is not None and os.path.isfile(path):
-            with open(path, 'r', encoding="ISO-8859-1") as f:
+            with open(path, 'r', encoding="utf-8") as f:
                 for line in f.readlines():
                     info = StockBasicInfo(*line.split())
                     self.infolist[info.key] = info
                 f.close()
                 return True
         else:
-            print('load file failed.')
+            print('load file {} failed.'.format(file_name))
             return False
 
     def load_from_server(self):
-        BaoStock.login()
         info_list = BaoStock.query_basic()
-        BaoStock.logout()
         for line in info_list:
             info = StockBasicInfo(*line)
             self.infolist[info.key] = info
@@ -73,20 +75,24 @@ class StocksBasicInfo:
     def save_to_file(self, file_name='default.list'):
         path = UtilsConfig.get_stock_list_path(file_name)
         if path is not None:
-            with open(path, 'w', encoding="ISO-8859-1") as f:
+            with open(path, 'w') as f:
                 for key, line in self.infolist.items():
                     assert(isinstance(line, StockBasicInfo))
-                    f.write('{} {} {} {} {} {}'.format(line.code, line.code_name, line.ipoDate, line.outDate,
-                            line.status.numerator, line.type.numerator))
+                    f.write('{} {} {} {} {} {}\n'.format(line.code, line.code_name, line.ipoDate, line.outDate,
+                            line.type.numerator, line.status.numerator))
                 f.close()
                 return True
         else:
-            print('save file failed.')
+            print('save file {} failed.'.format(file_name))
             return False
 
     def add(self, code, code_name, ipo_date, out_date, type, status):
         info = StockBasicInfo(code, code_name, ipo_date, out_date, type, status)
         self.infolist[info.key] = info
+
+    def add_instance(self, instance):
+        assert(isinstance(instance, StockBasicInfo))
+        self.infolist[instance.key] = deepcopy(instance)
 
     def remove(self, code):
         try:
@@ -99,6 +105,146 @@ class StocksBasicInfo:
 
     def get_list(self):
         return [item for key, item in self.infolist.items()]
+
+    def get_dict(self):
+        return self.infolist
+
+    def dump(self):
+        for key, value in self.infolist.items():
+            print(value)
+
+
+class StockSuperiorInfo:
+    def __init__(self, update_date, code, code_name):
+        self.key = int(code[3:])
+        self.update_date = update_date
+        self.code = code
+        self.code_name = code_name
+
+    def __str__(self):
+        return '{} {} {}'.format(self.update_date, self.code, self.code_name)
+
+
+class StocksSuperiorInfo:
+    TYPE_HZ300 = 0
+    TYPE_ZZ500 = 1
+    TYPE_SZ50 = 2
+
+    def __init__(self, stocks_type=TYPE_HZ300):
+        self.type = stocks_type
+        self.infolist = {}
+        if stocks_type == self.TYPE_ZZ500:
+            self.list_name = 'zz500.list'
+            self.stock_get_func = BaoStock.query_zz500_stocks
+        elif stocks_type == self.TYPE_SZ50:
+            self.list_name = 'sz50.list'
+            self.stock_get_func = BaoStock.query_sz50_stocks
+        else:
+            self.list_name = 'hz300.list'
+            self.stock_get_func = BaoStock.query_hs300_stocks
+
+    def load_from_file(self):
+        path = UtilsConfig.get_stock_list_path(self.list_name)
+        if path is not None and os.path.isfile(path):
+            with open(path, 'r', encoding="utf-8") as f:
+                for line in f.readlines():
+                    info = StockSuperiorInfo(*line.split())
+                    self.infolist[info.key] = info
+                f.close()
+                return True
+        else:
+            print('load file {} failed.'.format(self.list_name))
+            return False
+
+    def load_from_server(self):
+        info_list = self.stock_get_func()
+        for line in info_list:
+            info = StockSuperiorInfo(*line)
+            self.infolist[info.key] = info
+        return True
+
+    def save_to_file(self):
+        path = UtilsConfig.get_stock_list_path(self.list_name)
+        if path is not None:
+            with open(path, 'w', encoding="utf-8") as f:
+                for key, line in self.infolist.items():
+                    assert(isinstance(line, StockSuperiorInfo))
+                    f.write('{} {} {}\n'.format(line.update_date, line.code, line.code_name))
+                f.close()
+                return True
+        else:
+            print('save file {} failed.'.format(self.list_name))
+            return False
+
+    def get_list(self):
+        return [item for key, item in self.infolist.items()]
+
+    def get_dict(self):
+        return self.infolist
+
+    def dump(self):
+        for key, value in self.infolist.items():
+            print(value)
+
+
+class StockIndustryInfo:
+    def __init__(self, update_date, code, code_name, industry, ind_class):
+        self.key = int(code[3:])
+        self.update_date = update_date
+        self.code = code
+        self.code_name = code_name
+        self.industry = industry if industry != '' else '-'
+        self.ind_class = ind_class if ind_class != '' else '-'
+
+    def __str__(self):
+        return '{} {} {} {} {}'.format(self.update_date, self.code, self.code_name,
+                                       self.industry, self.ind_class)
+
+
+class StocksIndustryInfo:
+    def __init__(self):
+        self.infolist = {}
+        self.list_name = 'industry.list'
+
+    def load_from_file(self):
+        path = UtilsConfig.get_stock_list_path(self.list_name)
+        if path is not None and os.path.isfile(path):
+            with open(path, 'r', encoding="utf-8") as f:
+                for line in f.readlines():
+                    info = StockIndustryInfo(*line.split())
+                    self.infolist[info.key] = info
+                f.close()
+                return True
+        else:
+            print('load file {} failed.'.format(self.list_name))
+            return False
+
+    def load_from_server(self):
+        info_list = BaoStock.query_stock_industry()
+        for line in info_list:
+            info = StockIndustryInfo(*line)
+            self.infolist[info.key] = info
+        return True
+
+    def save_to_file(self):
+        path = UtilsConfig.get_stock_list_path(self.list_name)
+        if path is not None:
+            with open(path, 'w', encoding="utf-8") as f:
+                for key, line in self.infolist.items():
+                    assert(isinstance(line, StockIndustryInfo))
+                    f.write('{} {} {} {} {}\n'.format(line.update_date, line.code, line.code_name,
+                                                      line.industry, line.ind_class))
+                f.close()
+                return True
+        else:
+            print('save file {} failed.'.format(self.list_name))
+            return False
+
+    def get_list(self):
+        return [item for key, item in self.infolist.items()]
+
+    def get_dict(self):
+        return self.infolist
 
     def dump(self):
         for key, value in self.infolist.items():
@@ -218,11 +364,11 @@ class DataD:
         self.adjust_flag = int(adjust_flag)
         self.turn = float(turn) if turn != '' else 0.0
         self.trade_status = bool(trade_status)
-        self.pctChg = float(pctChg)  # 涨跌幅
-        self.peTTM = float(peTTM)  # 动态市盈率
-        self.psTTM = float(psTTM)  # 市销率
-        self.pcfNcfTTM = float(pcfNcfTTM)  # 市现率
-        self.pbMRQ = float(pbMRQ)  # 市净率
+        self.pctChg = float(pctChg) if turn != '' else 0.0  # 涨跌幅
+        self.peTTM = float(peTTM) if turn != '' else 0.0  # 动态市盈率
+        self.psTTM = float(psTTM) if turn != '' else 0.0  # 市销率
+        self.pcfNcfTTM = float(pcfNcfTTM) if turn != '' else 0.0  # 市现率
+        self.pbMRQ = float(pbMRQ) if turn != '' else 0.0  # 市净率
         self.isST = bool(isST)  # 是否ST
 
     def __str__(self):
@@ -302,7 +448,20 @@ class StockUpdateRecord:
 
 
 if __name__ == '__main__':
+    ssi = StocksSuperiorInfo(stocks_type=StocksSuperiorInfo.TYPE_ZZ500)
+    sbi = StocksBasicInfo()
+    sii = StocksIndustryInfo()
     BaoStock.login()
-    stock_update = StockUpdateRecord('sh.600000')
-    stock_update.update_kd()
+    # ssi.load_from_server()
+    # sbi.load_from_server()
+    # sii.load_from_server()
     BaoStock.logout()
+    # sbi.save_to_file()
+    # sbi.load_from_file()
+    # sbi.dump()
+    # ssi.save_to_file()
+    # ssi.load_from_file()
+    # ssi.dump()
+    # sii.save_to_file()
+    sii.load_from_file()
+    sii.dump()

@@ -60,7 +60,7 @@ class UtilsConfig:
                 pass
             cfg.set(item[0], item[1], item[2])
         try:
-            with open(UtilsConfig.CONFIG_NAME, 'w', encoding="ISO-8859-1") as cfg_file:
+            with open(UtilsConfig.CONFIG_NAME, 'w', encoding="utf-8") as cfg_file:
                 cfg.write(cfg_file)
             print('File config.ini created.')
         except Exception as e:
