@@ -16,6 +16,8 @@ def update_all_data(update_kd=False, update_k5=False):
     BaoStock.login()
     for i in range(item_num):
         assert(isinstance(item_list[i], StockBasicInfo))
+        if item_list[i].status is StockStatus.DELISTING:
+            continue
         sur = StockUpdateRecord(item_list[i].code)
         if update_kd:
             sur.update_kd()

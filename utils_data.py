@@ -23,6 +23,7 @@ __all__ = [
     'StockUpdateRecord',
 ]
 
+
 class StockType(IntEnum):
     STOCK = 1
     INDEX = 2
@@ -34,18 +35,25 @@ class StockStatus(IntEnum):
     DELISTING = 0
 
 
+class StockTradeStatus(IntEnum):
+    ON = 0
+    OFF = 1
+    DATA_ERROR = 0xFFFFFFFF
+
+
 class StockBasicInfo:
-    def __init__(self, code, code_name, ipo_date, out_date, type, status):
+    def __init__(self, code, code_name, ipo_date, out_date, stock_type, status):
         self.key = int(code[3:])
         self.code = code
         self.code_name = code_name
         self.ipoDate = int(str(ipo_date).replace('-', ''))
         self.outDate = int(str(out_date).replace('-', '')) if out_date is not '' else 20991231
-        self.type = StockType(int(type))
+        self.type = StockType(int(stock_type))
         self.status = StockStatus(int(status))
 
     def __str__(self):
-        return '{} {} {} {:06d} {:06d} {}'.format(self.code, self.type.name, self.status.name, self.ipoDate, self.outDate, self.code_name)
+        return '{} {} {} {:06d} {:06d} {}'.format(self.code, self.type.name, self.status.name,
+                                                  self.ipoDate, self.outDate, self.code_name)
 
 
 class StocksBasicInfo:
@@ -86,8 +94,8 @@ class StocksBasicInfo:
             print('save file {} failed.'.format(file_name))
             return False
 
-    def add(self, code, code_name, ipo_date, out_date, type, status):
-        info = StockBasicInfo(code, code_name, ipo_date, out_date, type, status)
+    def add(self, code, code_name, ipo_date, out_date, stock_type, status):
+        info = StockBasicInfo(code, code_name, ipo_date, out_date, stock_type, status)
         self.infolist[info.key] = info
 
     def add_instance(self, instance):
@@ -258,9 +266,9 @@ class StockData:
     KD_HEX_LEN = 4*18
     NEW_FILE_DATE = '150101'
 
-    def __init__(self, code_name, load_kd=False, load_k5=False, sync=False):
-        assert(isinstance(code_name, str))
-        self.code_name = code_name
+    def __init__(self, code, load_kd=False, load_k5=False, sync=False):
+        assert(isinstance(code, str))
+        self.code = code
         self.kd_list = []
         self.k5_list = []
         self.sync = sync
@@ -305,7 +313,7 @@ class StockData:
             print('File size error: ' + path)
 
     def load_kd(self):
-        path = UtilsConfig.get_stock_data_path(self.code_name, stock_type='kd')
+        path = UtilsConfig.get_stock_data_path(self.code, stock_type='kd')
         if path is not None and os.path.isfile(path):
             self.kd_list = StockData.parse_hex_kd(path)
             return True
@@ -314,7 +322,7 @@ class StockData:
             return False
 
     def load_k5(self):
-        path = UtilsConfig.get_stock_data_path(self.code_name, stock_type='k5')
+        path = UtilsConfig.get_stock_data_path(self.code, stock_type='k5')
         if path is not None and os.path.isfile(path):
             self.k5_list = StockData.parse_hex_k5(path)
             return True
@@ -348,28 +356,36 @@ class Data5:
 class DataD:
     def __init__(self, date, v_open, v_close, v_high, v_low, volume, amount, adjust_flag,
                  turn, trade_status, pctChg, peTTM, psTTM, pcfNcfTTM, pbMRQ, isST):
-        # ['2018-11-01', '18.9000', '18.2200', '19.1200', '18.1100', '4301411', '79888895.9000', '3', '3.587307', '1', '1.053792', '179.076255', '16.478888', '71.301441', '3.187132', '0']
+        # ['2018-11-01', '18.9000', '18.2200', '19.1200', '18.1100', '4301411', '79888895.9000', '3',
+        # '3.587307', '1', '1.053792', '179.076255', '16.478888', '71.301441', '3.187132', '0']
         if isinstance(date, str):
             self.date_str = date[2:4]+date[5:7]+date[8:10]
         elif isinstance(date, int):
             self.date_str = str(date)
         else:
             assert False
-        self.open = float(v_open)
-        self.close = float(v_close)
-        self.high = float(v_high)
-        self.low = float(v_low)
-        self.volume = int(volume)
-        self.amount = float(amount)
-        self.adjust_flag = int(adjust_flag)
-        self.turn = float(turn) if turn != '' else 0.0
-        self.trade_status = bool(trade_status)
-        self.pctChg = float(pctChg) if turn != '' else 0.0  # 涨跌幅
-        self.peTTM = float(peTTM) if turn != '' else 0.0  # 动态市盈率
-        self.psTTM = float(psTTM) if turn != '' else 0.0  # 市销率
-        self.pcfNcfTTM = float(pcfNcfTTM) if turn != '' else 0.0  # 市现率
-        self.pbMRQ = float(pbMRQ) if turn != '' else 0.0  # 市净率
-        self.isST = bool(isST)  # 是否ST
+        try:
+            self.open = float(v_open)
+            self.close = float(v_close)
+            self.high = float(v_high)
+            self.low = float(v_low)
+            self.volume = int(volume)
+            self.amount = float(amount)
+            self.adjust_flag = int(adjust_flag)
+            self.turn = float(turn)
+            self.trade_status = StockTradeStatus(trade_status)
+            self.pctChg = float(pctChg)  # 涨跌幅
+            self.peTTM = float(peTTM)  # 动态市盈率
+            self.psTTM = float(psTTM)  # 市销率
+            self.pcfNcfTTM = float(pcfNcfTTM)  # 市现率
+            self.pbMRQ = float(pbMRQ)  # 市净率
+            self.isST = bool(isST)  # 是否ST
+        except ValueError:
+            self.open, self.close, self.high, self.low = 0.0, 0.0, 0.0, 0.0
+            self.volume, self.amount, self.adjust_flag, self.turn = 0, 0.0, 0, 0.0
+            self.trade_status = StockTradeStatus.DATA_ERROR
+            self.pctChg, self.peTTM, self.psTTM, self.pcfNcfTTM = 0.0, 0.0, 0.0, 0.0
+            self.pbMRQ, self.isST = 0.0, False
 
     def __str__(self):
         return '{}  {:6.2f}  {:6.2f}  {:6.2f}  {:6.2f}  {:10d}  {:5.2f}  {:.2f}  {}'. \
@@ -389,9 +405,10 @@ class StockUpdateRecord:
                     file = open(path, 'rb')
                     file.seek(-StockData.KD_HEX_LEN, 2)  # from the end of file
                     date_hex = file.read(4)
-                    date_str = str(unpack('L', date_hex)[0])
+                    date_str = str(unpack('<L', date_hex)[0])
                     file.close()
-                except:
+                except Exception as e:
+                    print(' ' + str(e))
                     date_str = StockData.NEW_FILE_DATE
             else:
                 date_str = StockData.NEW_FILE_DATE
@@ -423,9 +440,10 @@ class StockUpdateRecord:
                     file = open(path, 'rb')
                     file.seek(-StockData.K5_HEX_LEN, 2)  # from the end of file
                     date_hex = file.read(4)
-                    date_str = str(unpack('L', date_hex)[0] // 10000)
+                    date_str = str(unpack('<L', date_hex)[0] // 10000)
                     file.close()
-                except:
+                except Exception as e:
+                    print(' ' + str(e))
                     date_str = StockData.NEW_FILE_DATE
             else:
                 date_str = StockData.NEW_FILE_DATE
