@@ -11,6 +11,7 @@ from copy import deepcopy
 __all__ = [
     'Data5',
     'DataD',
+    'DataRt',
     'StockType',
     'StockStatus',
     'StockBasicInfo',
@@ -20,6 +21,7 @@ __all__ = [
     'StockIndustryInfo',
     'StocksIndustryInfo',
     'StockData',
+    'StockRtData',
     'StockUpdateRecord',
 ]
 
@@ -260,37 +262,51 @@ class StocksIndustryInfo:
 
 
 class StockData:
-    FMT_K5_HEX = '<LffffLf'
-    K5_HEX_LEN = 4*7
-    FMT_KD_HEX = '<LffffLQfLfLfffffL'
-    KD_HEX_LEN = 4*18
     NEW_FILE_DATE = '150101'
 
-    def __init__(self, code, load_kd=False, load_k5=False, sync=False):
+    def __init__(self, code, load_kd=0, load_k5=0, sync=False):
         assert(isinstance(code, str))
         self.code = code
         self.kd_list = []
         self.k5_list = []
         self.sync = sync
         self.sync_len = 0
-        if load_kd:
-            self.load_kd()
-        if load_k5:
-            self.load_k5()
+        if load_kd > 0:
+            self.load_kd(load_kd)
+        if load_k5 > 0:
+            self.load_k5(load_k5)
+        if sync:
+            if len(self.kd_list) <= 1 or len(self.k5_list) == 0 or \
+                    (self.kd_list[-1].date_num != self.k5_list[-1][0].date_num and
+                     self.kd_list[-2].date_num != self.k5_list[-1][0].date_num):
+                self.sync_len = 0
+            else:
+                if self.kd_list[-1].date_num != self.k5_list[-1][0].date_num:
+                    del(self.kd_list[-1])
+                max_len = min(len(self.kd_list), len(self.k5_list))
+                for i in range(-1, -max_len-1, -1):
+                    if self.kd_list[i].date_num == self.k5_list[i][0].date_num:
+                        self.sync_len += 1
+                    else:
+                        break
 
     @staticmethod
-    def parse_hex_k5(path):
+    def parse_hex_k5(path, days):
         ret_list = []
         data_list = []
         size = os.path.getsize(path)
-        if 0 == (size % StockData.K5_HEX_LEN):
+        if 0 == (size % Data5.HEX_LEN):
             f = open(path, 'rb')
-            for i in range(size//StockData.K5_HEX_LEN):
-                item_data = f.read(StockData.K5_HEX_LEN)
-                data_list.append(Data5(*unpack(StockData.FMT_K5_HEX, item_data)))
+            if days < size//Data5.HEX_LEN//48:
+                f.seek(-days * Data5.HEX_LEN * 48, 2)  # from the end of file
+            else:
+                days = size//Data5.HEX_LEN//48
+            for i in range(days * 48):
+                item_data = f.read(Data5.HEX_LEN)
+                data_list.append(Data5(*unpack(Data5.FMT_HEX, item_data)))
             f.close()
             if (len(data_list) % 48) != 0:  # lose part data of a day
-                print('{}  {}'.format(path, len(data_list)))
+                print('Data seems wrong: {}  {}'.format(path, len(data_list)))
             for i in range(len(data_list) // 48):
                 ret_list.append(data_list[i * 48:(i+1) * 48])
             return ret_list
@@ -298,33 +314,37 @@ class StockData:
             print('File size error: ' + path)
 
     @staticmethod
-    def parse_hex_kd(path):
+    def parse_hex_kd(path, days):
         ret_list = []
         size = os.path.getsize(path)
-        if 0 == (size % StockData.KD_HEX_LEN):
+        if 0 == (size % DataD.HEX_LEN):
             f = open(path, 'rb')
-            for i in range(size//StockData.KD_HEX_LEN):
-                item_data = f.read(StockData.KD_HEX_LEN)
-                params = unpack(StockData.FMT_KD_HEX, item_data)
+            if days < size//DataD.HEX_LEN:
+                f.seek(-days * DataD.HEX_LEN, 2)  # from the end of file
+            else:
+                days = size//DataD.HEX_LEN
+            for i in range(days):
+                item_data = f.read(DataD.HEX_LEN)
+                params = unpack(DataD.FMT_HEX, item_data)
                 ret_list.append(DataD(*(params[:5]+params[6:])))  # ignore unused integer
             f.close()
             return ret_list
         else:
             print('File size error: ' + path)
 
-    def load_kd(self):
+    def load_kd(self, days):
         path = UtilsConfig.get_stock_data_path(self.code, stock_type='kd')
         if path is not None and os.path.isfile(path):
-            self.kd_list = StockData.parse_hex_kd(path)
+            self.kd_list = StockData.parse_hex_kd(path, days)
             return True
         else:
             print('Load kd error')
             return False
 
-    def load_k5(self):
+    def load_k5(self, days):
         path = UtilsConfig.get_stock_data_path(self.code, stock_type='k5')
         if path is not None and os.path.isfile(path):
-            self.k5_list = StockData.parse_hex_k5(path)
+            self.k5_list = StockData.parse_hex_k5(path, days)
             return True
         else:
             print('Load k5 error')
@@ -332,6 +352,9 @@ class StockData:
 
 
 class Data5:
+    FMT_HEX = '<LffffLf'
+    HEX_LEN = 4*7
+
     def __init__(self, v_time, v_open, v_close, v_high, v_low, volume, amount):
         # ['20181109150000000', '18.5400', '18.5200', '18.5500', '18.5000', '99200', '1837097.0000']
         if isinstance(v_time, str):
@@ -340,6 +363,7 @@ class Data5:
             self.time_str = str(v_time)
         else:
             assert False
+        self.date_num = int(self.time_str[:6])
         self.open = float(v_open)
         self.close = float(v_close)
         self.high = float(v_high)
@@ -354,6 +378,9 @@ class Data5:
 
 
 class DataD:
+    FMT_HEX = '<LffffLQfLfLfffffL'
+    HEX_LEN = 4*18
+
     def __init__(self, date, v_open, v_close, v_high, v_low, volume, amount, adjust_flag,
                  turn, trade_status, pctChg, peTTM, psTTM, pcfNcfTTM, pbMRQ, isST):
         # ['2018-11-01', '18.9000', '18.2200', '19.1200', '18.1100', '4301411', '79888895.9000', '3',
@@ -365,6 +392,7 @@ class DataD:
         else:
             assert False
         try:
+            self.date_num = int(self.date_str)
             self.open = float(v_open)
             self.close = float(v_close)
             self.high = float(v_high)
@@ -393,6 +421,97 @@ class DataD:
                    self.high, self.low, self.volume, self.turn, self.amount, self.trade_status)
 
 
+class DataRt:
+    FMT_RT_HEX = '<LLLfffLfLfLfLfLfLfLfLfLfLfLf'
+    RT_HEX_LEN = 4*28
+
+    def __init__(self, date, time, code, new, high, low, volume, amount,
+                 b1v, b1n, b2v, b2n, b3v, b3n, b4v, b4n, b5v, b5n,
+                 s1v, s1n, s2v, s2n, s3v, s3n, s4v, s4n, s5v, s5n):
+            self.date, self.time = int(date), int(time)
+            self.high, self.low = float(high), float(low)
+            self.code, self.new = int(code), float(new)
+            self.volume, self.amount = int(volume), float(amount)
+            self.b1n, self.b1v, self.s1n, self.s1v = int(b1n), float(b1v), int(s1n), float(s1v)
+            self.b2n, self.b2v, self.s2n, self.s2v = int(b2n), float(b2v), int(s2n), float(s2v)
+            self.b3n, self.b3v, self.s3n, self.s3v = int(b3n), float(b3v), int(s3n), float(s3v)
+            self.b4n, self.b4v, self.s4n, self.s4v = int(b4n), float(b4v), int(s4n), float(s4v)
+            self.b5n, self.b5v, self.s5n, self.s5v = int(b5n), float(b5v), int(s5n), float(s5v)
+
+    def __str__(self):
+        return (
+                '{}{:06d}  {:06d}  {:.2f} {:.2f} {:.2f} {:9d} {:11.1f}' +
+                ' | {:6.2f} {:5d}, {:6.2f} {:5d}, {:6.2f} {:5d}, {:6.2f} {:5d}, {:6.2f} {:5d}' +
+                ' | {:6.2f} {:5d}, {:6.2f} {:5d}, {:6.2f} {:5d}, {:6.2f} {:5d}, {:6.2f} {:5d}'). \
+            format(self.date, self.time, self.code, self.new, self.high, self.low, self.volume, self.amount,
+                   self.b5v, self.b5n, self.b4v, self.b4n, self.b3v, self.b3n, self.b2v, self.b2n, self.b1v, self.b1n,
+                   self.s1v, self.s1n, self.s2v, self.s2n, self.s3v, self.s3n, self.s4v, self.s4n, self.s5v, self.s5n)
+
+
+class StockRtData:
+    ST_UNSUBCRIBE = 0
+    ST_SUBCRIBED = 1
+    status = ST_UNSUBCRIBE
+    last_rec = {}
+    sub_cb = None  # func(DataRt, value_change, volume_change, user_param)
+    param = None
+
+    @staticmethod
+    def _sub_cb(result_data):
+        if StockRtData.status == StockRtData.ST_UNSUBCRIBE:
+            return
+        for k, v in result_data.data.items():
+            # v:[date, time, code, name, open, close, new, high, low, volume, amount, 5*(buy, num), 5*(sell, num)]
+            # ['2018-11-19', '14:37:03', 'code', 'code_name',
+            # '0.000', '18.520', '0.000', '0.000', '0.000', '0', '0.000',
+            # '0.000', '0', '0.000', '0', '0.000', '0', '0.000', '0', '0.000', '0',
+            # '0.000', '0', '0.000', '0', '0.000', '0', '0.000', '0', '0.000', '0']
+            # self.sub_cb(0)
+            date_time = [v[0][2:4]+v[0][5:7]+v[0][8:10], v[1][0:2]+v[1][3:5]+v[1][6:8]]
+            # date, time, code, new, high, low, volume, amount, 5*(buy, num), 5*(sell, num)
+            rt = DataRt(*(date_time+[v[2][3:]]+v[6:]))  # ignore name, open, close
+            if rt.code not in StockRtData.last_rec or rt.new != StockRtData.last_rec[rt.code].new:
+                StockRtData.last_rec[rt.code] = rt
+                StockRtData.sub_cb(rt, True, True, StockRtData.param)
+            elif StockRtData.is_5change(rt, StockRtData.last_rec[rt.code]):
+                StockRtData.sub_cb(rt, False, True, StockRtData.param)
+            else:
+                StockRtData.sub_cb(rt, False, False, StockRtData.param)
+
+    @staticmethod
+    def subscribe(sub_list, sub_cb, param=None):
+        assert(isinstance(sub_list, list))
+        assert(sub_cb is not None)
+        if StockRtData.status is not StockRtData.ST_UNSUBCRIBE:
+            print('Already subscribed.')
+            return
+        StockRtData.status = StockRtData.ST_SUBCRIBED
+        StockRtData.sub_cb = sub_cb
+        StockRtData.param = param
+        sub_code = ', '.join(sub_list)
+        BaoStock.subscribe_real_time(sub_code, StockRtData._sub_cb)
+
+    @staticmethod
+    def unsubscribe():
+        if StockRtData.status is not StockRtData.ST_SUBCRIBED:
+            print('Already unsubscribed.')
+            return
+        StockRtData.status = StockRtData.ST_UNSUBCRIBE
+        StockRtData.param = None
+        StockRtData.sub_cb = None
+        StockRtData.last_rec = {}
+        BaoStock.unsubscribe_real_time()
+
+    @staticmethod
+    def is_5change(rt1, rt2):
+        assert (isinstance(rt1, DataRt) and isinstance(rt2, DataRt))
+        return not (rt1.b1n, rt1.b1v, rt1.s1n, rt1.s1v) == (rt2.b1n, rt2.b1v, rt2.s1n, rt2.s1v) and \
+                   (rt1.b2n, rt1.b2v, rt1.s2n, rt1.s2v) == (rt2.b2n, rt2.b2v, rt2.s2n, rt2.s2v) and \
+                   (rt1.b3n, rt1.b3v, rt1.s3n, rt1.s3v) == (rt2.b3n, rt2.b3v, rt2.s3n, rt2.s3v) and \
+                   (rt1.b4n, rt1.b4v, rt1.s4n, rt1.s4v) == (rt2.b4n, rt2.b4v, rt2.s4n, rt2.s4v) and \
+                   (rt1.b5n, rt1.b5v, rt1.s5n, rt1.s5v) == (rt2.b5n, rt2.b5v, rt2.s5n, rt2.s5v)
+
+
 class StockUpdateRecord:
     def __init__(self, code_name):
         self.code_name = code_name
@@ -403,7 +522,7 @@ class StockUpdateRecord:
             if os.path.isfile(path):
                 try:
                     file = open(path, 'rb')
-                    file.seek(-StockData.KD_HEX_LEN, 2)  # from the end of file
+                    file.seek(-DataD.HEX_LEN, 2)  # from the end of file
                     date_hex = file.read(4)
                     date_str = str(unpack('<L', date_hex)[0])
                     file.close()
@@ -421,7 +540,7 @@ class StockUpdateRecord:
                 for item in kd_list:
                     kd = DataD(*item)
                     if int(date_str) < int(kd.date_str):
-                        file.write(pack(StockData.FMT_KD_HEX,
+                        file.write(pack(DataD.FMT_HEX,
                                         # date, open, close, high, low, unused, volume, amount,
                                         int(kd.date_str), kd.open, kd.close, kd.high, kd.low, 0, kd.volume, kd.amount,
                                         # adjustflag, turn, tradestatus, pctChg, peTTM,
@@ -438,7 +557,7 @@ class StockUpdateRecord:
             if os.path.isfile(path):
                 try:
                     file = open(path, 'rb')
-                    file.seek(-StockData.K5_HEX_LEN, 2)  # from the end of file
+                    file.seek(-Data5.HEX_LEN, 2)  # from the end of file
                     date_hex = file.read(4)
                     date_str = str(unpack('<L', date_hex)[0] // 10000)
                     file.close()
@@ -458,7 +577,7 @@ class StockUpdateRecord:
                     k5 = Data5(*item)
                     if int(date_str) < int(k5.time_str[:6]):
                         #  time, open, close, high, low, volume, amount
-                        file.write(pack(StockData.FMT_K5_HEX, int(k5.time_str),
+                        file.write(pack(Data5.FMT_HEX, int(k5.time_str),
                                         k5.open, k5.close, k5.high, k5.low, k5.volume, k5.amount))
                 file.close()
         else:
