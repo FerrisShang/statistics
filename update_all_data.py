@@ -21,12 +21,12 @@ def update_all_data(update_kd=False, update_k5=False):
         sur = StockUpdateRecord(item_list[i].code)
         if update_kd:
             sur.update_kd()
-        print('\r({}/{}) {} Update kd finished'.format(
-            i, item_num, item_list[i].code), end='', flush=True)
+            print('\r({}/{}) {} Update kd finished'.format(
+                i, item_num, item_list[i].code), end='', flush=True)
         if update_k5:
             sur.update_k5()
-        print('\r({}/{}) {} Update k5 finished'.format(
-            i, item_num, item_list[i].code), end='', flush=True)
+            print('\r({}/{}) {} Update k5 finished'.format(
+                i, item_num, item_list[i].code), end='', flush=True)
     print('\rUpdate finished.')
     BaoStock.logout()
 

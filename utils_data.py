@@ -65,7 +65,7 @@ class StocksBasicInfo:
     def load_from_file(self, file_name='default.list'):
         path = UtilsConfig.get_stock_list_path(file_name)
         if path is not None and os.path.isfile(path):
-            with open(path, 'r', encoding="utf-8") as f:
+            with open(path, 'r', encoding=UtilsConfig.get_encoding()) as f:
                 for line in f.readlines():
                     info = StockBasicInfo(*line.split())
                     self.infolist[info.key] = info
@@ -85,7 +85,7 @@ class StocksBasicInfo:
     def save_to_file(self, file_name='default.list'):
         path = UtilsConfig.get_stock_list_path(file_name)
         if path is not None:
-            with open(path, 'w') as f:
+            with open(path, 'w', encoding=UtilsConfig.get_encoding()) as f:
                 for key, line in self.infolist.items():
                     assert(isinstance(line, StockBasicInfo))
                     f.write('{} {} {} {} {} {}\n'.format(line.code, line.code_name, line.ipoDate, line.outDate,
@@ -156,7 +156,7 @@ class StocksSuperiorInfo:
     def load_from_file(self):
         path = UtilsConfig.get_stock_list_path(self.list_name)
         if path is not None and os.path.isfile(path):
-            with open(path, 'r', encoding="utf-8") as f:
+            with open(path, 'r', encoding=UtilsConfig.get_encoding()) as f:
                 for line in f.readlines():
                     info = StockSuperiorInfo(*line.split())
                     self.infolist[info.key] = info
@@ -176,7 +176,7 @@ class StocksSuperiorInfo:
     def save_to_file(self):
         path = UtilsConfig.get_stock_list_path(self.list_name)
         if path is not None:
-            with open(path, 'w', encoding="utf-8") as f:
+            with open(path, 'w', encoding=UtilsConfig.get_encoding()) as f:
                 for key, line in self.infolist.items():
                     assert(isinstance(line, StockSuperiorInfo))
                     f.write('{} {} {}\n'.format(line.update_date, line.code, line.code_name))
@@ -219,7 +219,7 @@ class StocksIndustryInfo:
     def load_from_file(self):
         path = UtilsConfig.get_stock_list_path(self.list_name)
         if path is not None and os.path.isfile(path):
-            with open(path, 'r', encoding="utf-8") as f:
+            with open(path, 'r', encoding=UtilsConfig.get_encoding()) as f:
                 for line in f.readlines():
                     info = StockIndustryInfo(*line.split())
                     self.infolist[info.key] = info
@@ -239,7 +239,7 @@ class StocksIndustryInfo:
     def save_to_file(self):
         path = UtilsConfig.get_stock_list_path(self.list_name)
         if path is not None:
-            with open(path, 'w', encoding="utf-8") as f:
+            with open(path, 'w', encoding=UtilsConfig.get_encoding()) as f:
                 for key, line in self.infolist.items():
                     assert(isinstance(line, StockIndustryInfo))
                     f.write('{} {} {} {} {}\n'.format(line.update_date, line.code, line.code_name,
