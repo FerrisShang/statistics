@@ -99,7 +99,7 @@ class UtilsConfig:
         except configparser.Error:
             print('Read config error')
             return None
-        UtilsConfig.m_get_encoding = res if res is not None else None
+        UtilsConfig.m_get_encoding = res if res != '' else None
         return UtilsConfig.m_get_encoding
 
     @staticmethod

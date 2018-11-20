@@ -519,7 +519,7 @@ class StockUpdateRecord:
     def update_kd(self):
         path = UtilsConfig.get_stock_data_path(self.code_name, stock_type='kd')
         if path is not None:
-            if os.path.isfile(path):
+            if os.path.isfile(path) and os.path.getsize(path) > DataD.HEX_LEN:
                 try:
                     file = open(path, 'rb')
                     file.seek(-DataD.HEX_LEN, 2)  # from the end of file
@@ -554,7 +554,7 @@ class StockUpdateRecord:
     def update_k5(self):
         path = UtilsConfig.get_stock_data_path(self.code_name, stock_type='k5')
         if path is not None:
-            if os.path.isfile(path):
+            if os.path.isfile(path) and os.path.getsize(path) > Data5.HEX_LEN:
                 try:
                     file = open(path, 'rb')
                     file.seek(-Data5.HEX_LEN, 2)  # from the end of file
