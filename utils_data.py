@@ -14,6 +14,7 @@ __all__ = [
     'DataRt',
     'StockType',
     'StockStatus',
+    'StockTradeStatus',
     'StockBasicInfo',
     'StocksBasicInfo',
     'StockSuperiorInfo',
@@ -38,8 +39,8 @@ class StockStatus(IntEnum):
 
 
 class StockTradeStatus(IntEnum):
-    ON = 0
-    OFF = 1
+    ON = 1
+    OFF = 0
     DATA_ERROR = 0xFFFFFFFF
 
 
@@ -400,14 +401,14 @@ class DataD:
             self.volume = int(volume)
             self.amount = float(amount)
             self.adjust_flag = int(adjust_flag)
-            self.turn = float(turn)
-            self.trade_status = StockTradeStatus(trade_status)
-            self.pctChg = float(pctChg)  # 涨跌幅
-            self.peTTM = float(peTTM)  # 动态市盈率
-            self.psTTM = float(psTTM)  # 市销率
-            self.pcfNcfTTM = float(pcfNcfTTM)  # 市现率
-            self.pbMRQ = float(pbMRQ)  # 市净率
-            self.isST = bool(isST)  # 是否ST
+            self.turn = float(0 if turn == '' else turn)
+            self.trade_status = StockTradeStatus(int(trade_status))
+            self.pctChg = float(0 if pctChg == '' else pctChg)
+            self.peTTM = float(peTTM)
+            self.psTTM = float(psTTM)
+            self.pcfNcfTTM = float(pcfNcfTTM)
+            self.pbMRQ = float(pbMRQ)
+            self.isST = bool(isST)
         except ValueError:
             self.open, self.close, self.high, self.low = 0.0, 0.0, 0.0, 0.0
             self.volume, self.amount, self.adjust_flag, self.turn = 0, 0.0, 0, 0.0
@@ -440,9 +441,7 @@ class DataRt:
 
     def __str__(self):
         return (
-                '{}{:06d}  {:06d}  {:.2f} {:.2f} {:.2f} {:9d} {:11.1f}' +
-                ' | {:6.2f} {:5d}, {:6.2f} {:5d}, {:6.2f} {:5d}, {:6.2f} {:5d}, {:6.2f} {:5d}' +
-                ' | {:6.2f} {:5d}, {:6.2f} {:5d}, {:6.2f} {:5d}, {:6.2f} {:5d}, {:6.2f} {:5d}'). \
+                '{}{:06d}  {:06d}  {:5.2f} {:5.2f} {:5.2f} {:9d} {:11.1f}'). \
             format(self.date, self.time, self.code, self.new, self.high, self.low, self.volume, self.amount,
                    self.b5v, self.b5n, self.b4v, self.b4n, self.b3v, self.b3n, self.b2v, self.b2n, self.b1v, self.b1n,
                    self.s1v, self.s1n, self.s2v, self.s2n, self.s3v, self.s3n, self.s4v, self.s4n, self.s5v, self.s5n)

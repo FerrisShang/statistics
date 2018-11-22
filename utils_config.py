@@ -77,7 +77,11 @@ class UtilsConfig:
                 pass
             cfg.set(item[0], item[1], item[2])
         try:
-            with open(UtilsConfig.CONFIG_NAME, 'w', encoding="utf-8") as cfg_file:
+            if UtilsConfig.is_windows():
+                encoding = UtilsConfig.DEFAULT_FILE_ENCODING_WIN
+            else:
+                encoding = UtilsConfig.DEFAULT_FILE_ENCODING_LINUX
+            with open(UtilsConfig.CONFIG_NAME, 'w', encoding=encoding if encoding != '' else None) as cfg_file:
                 cfg.write(cfg_file)
             print('File config.ini created.')
         except Exception as e:
@@ -124,9 +128,9 @@ class UtilsConfig:
         return path + list_name
 
     @staticmethod
-    def get_stock_data_path(code_name, stock_type='k5'):
+    def get_stock_data_path(code, stock_type='k5'):
         if UtilsConfig.m_get_stock_data_path is not None:
-            return UtilsConfig.m_get_stock_data_path.format(code_name, stock_type)
+            return UtilsConfig.m_get_stock_data_path.format(code, stock_type)
         UtilsConfig.check_config()
         cfg = configparser.ConfigParser()
         cfg.optionxform = str
@@ -144,4 +148,4 @@ class UtilsConfig:
             print('Read config error')
             return None
         UtilsConfig.m_get_stock_data_path = path
-        return path.format(code_name, stock_type)
+        return path.format(code, stock_type)
