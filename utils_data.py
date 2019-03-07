@@ -1,12 +1,14 @@
 import os
 import datetime
+import requests
+import csv
 from collections import OrderedDict
 from utils_config import UtilsConfig
 from enum import IntEnum
 from struct import pack, unpack
 from utils_baostock import *
 from copy import deepcopy
-
+from threading import Thread
 
 __all__ = [
     'Data5',
@@ -441,10 +443,12 @@ class DataRt:
 
     def __str__(self):
         return (
-                '{}{:06d}  {:06d}  {:5.2f} {:5.2f} {:5.2f} {:9d} {:11.1f}'). \
-            format(self.date, self.time, self.code, self.new, self.high, self.low, self.volume, self.amount,
-                   self.b5v, self.b5n, self.b4v, self.b4n, self.b3v, self.b3n, self.b2v, self.b2n, self.b1v, self.b1n,
-                   self.s1v, self.s1n, self.s2v, self.s2n, self.s3v, self.s3n, self.s4v, self.s4n, self.s5v, self.s5n)
+                '{}{:06d}  {:06d}  {:5.2f} {:5.2f} {:5.2f} {:7d} {:11.1f} | ' + ' {:5.2f} {:5d}'*5 + ' |' + ' {:5.2f} {:5d}'*5). \
+            format(self.date, self.time, self.code, self.new, self.high, self.low, self.volume//100, self.amount,
+                   self.b5v, self.b5n//100, self.b4v, self.b4n//100, self.b3v, self.b3n//100, self.b2v, self.b2n//100, self.b1v, self.b1n//100,
+                   self.s1v, self.s1n//100, self.s2v, self.s2n//100, self.s3v, self.s3n//100, self.s4v, self.s4n//100, self.s5v, self.s5n//100)
+            # '{}{:06d}  {:06d}  {:5.2f} {:5.2f} {} {:5.2f} {}'). \
+            # format(self.date, self.time, self.code, self.new, self.b1v, self.b1n, self.s1v, self.s1n)
 
 
 class StockRtData:
@@ -453,22 +457,14 @@ class StockRtData:
     status = ST_UNSUBCRIBE
     last_rec = {}
     sub_cb = None  # func(DataRt, value_change, volume_change, user_param)
+    interval = None
     param = None
 
     @staticmethod
     def _sub_cb(result_data):
         if StockRtData.status == StockRtData.ST_UNSUBCRIBE:
             return
-        for k, v in result_data.data.items():
-            # v:[date, time, code, name, open, close, new, high, low, volume, amount, 5*(buy, num), 5*(sell, num)]
-            # ['2018-11-19', '14:37:03', 'code', 'code_name',
-            # '0.000', '18.520', '0.000', '0.000', '0.000', '0', '0.000',
-            # '0.000', '0', '0.000', '0', '0.000', '0', '0.000', '0', '0.000', '0',
-            # '0.000', '0', '0.000', '0', '0.000', '0', '0.000', '0', '0.000', '0']
-            # self.sub_cb(0)
-            date_time = [v[0][2:4]+v[0][5:7]+v[0][8:10], v[1][0:2]+v[1][3:5]+v[1][6:8]]
-            # date, time, code, new, high, low, volume, amount, 5*(buy, num), 5*(sell, num)
-            rt = DataRt(*(date_time+[v[2][3:]]+v[6:]))  # ignore name, open, close
+        for rt in result_data:
             if rt.code not in StockRtData.last_rec or rt.new != StockRtData.last_rec[rt.code].new:
                 StockRtData.last_rec[rt.code] = rt
                 StockRtData.sub_cb(rt, True, True, StockRtData.param)
@@ -478,28 +474,49 @@ class StockRtData:
                 StockRtData.sub_cb(rt, False, False, StockRtData.param)
 
     @staticmethod
-    def subscribe(sub_list, sub_cb, param=None):
+    def get(stocks_list):
+        res = []
+        try:
+            r = requests.get('http://hq.sinajs.cn/?list={}'.format(','.join(stocks_list)))
+            ret = r.content.decode(encoding='gbk')
+            for line in ret.strip().split('\n'):
+                try:
+                    context = line.split('"')
+                    p = context[1].split(',')
+                    res.append(
+                        DataRt(
+                            date=p[30][2:4] + p[30][5:7] + p[30][8:10],
+                            time=p[31][0:2] + p[31][3:5] + p[31][6:8],
+                            code=context[0][-7:-1], new=p[3], high=p[4], low=p[5], volume=p[8], amount=p[9],
+                            b1v=p[11], b1n=p[10], b2v=p[13], b2n=p[12], b3v=p[15], b3n=p[14], b4v=p[17], b4n=p[16], b5v=p[19], b5n=p[18],
+                            s1v=p[21], s1n=p[20], s2v=p[23], s2n=p[22], s3v=p[25], s3n=p[24], s4v=p[27], s4n=p[26], s5v=p[29], s5n=p[28],
+                        )
+                    )
+                except IndexError:
+                    pass
+        except:
+            pass
+        finally:
+            return res
+
+    @staticmethod
+    def subscribe(sub_list, sub_cb, interval=10, param=None):
         assert(isinstance(sub_list, list))
         assert(sub_cb is not None)
+
+        def _sub_get(stocks_list):
+            while True:
+                res = StockRtData.get(stocks_list)
+                StockRtData._sub_cb(res)
+                sleep(StockRtData.interval)
         if StockRtData.status is not StockRtData.ST_UNSUBCRIBE:
             print('Already subscribed.')
             return
         StockRtData.status = StockRtData.ST_SUBCRIBED
         StockRtData.sub_cb = sub_cb
+        StockRtData.interval = interval
         StockRtData.param = param
-        sub_code = ', '.join(sub_list)
-        BaoStock.subscribe_real_time(sub_code, StockRtData._sub_cb)
-
-    @staticmethod
-    def unsubscribe():
-        if StockRtData.status is not StockRtData.ST_SUBCRIBED:
-            print('Already unsubscribed.')
-            return
-        StockRtData.status = StockRtData.ST_UNSUBCRIBE
-        StockRtData.param = None
-        StockRtData.sub_cb = None
-        StockRtData.last_rec = {}
-        BaoStock.unsubscribe_real_time()
+        Thread(target=_sub_get, args=[sub_list]).start()
 
     @staticmethod
     def is_5change(rt1, rt2):
@@ -509,6 +526,25 @@ class StockRtData:
                    (rt1.b3n, rt1.b3v, rt1.s3n, rt1.s3v) == (rt2.b3n, rt2.b3v, rt2.s3n, rt2.s3v) and \
                    (rt1.b4n, rt1.b4v, rt1.s4n, rt1.s4v) == (rt2.b4n, rt2.b4v, rt2.s4n, rt2.s4v) and \
                    (rt1.b5n, rt1.b5v, rt1.s5n, rt1.s5v) == (rt2.b5n, rt2.b5v, rt2.s5n, rt2.s5v)
+
+    @staticmethod
+    def to_csv(stock_list, show_data=True):
+        cw = {}
+
+        def rec_cb(r, value_change, volume_change, user_param):
+            assert(isinstance(r, DataRt))
+            if value_change or volume_change:
+                if r.code not in cw:
+                    file = open('{}{:06d}.csv'.format(r.date, r.code), 'w+', newline='')
+                    cw[r.code] = (file, csv.writer(file, dialect='excel'))
+                data = [r.time, r.new, r.high, r.low, r.volume, r.amount,
+                        r.b5v, r.b5n, r.b4v, r.b4n, r.b3v, r.b3n, r.b2v, r.b2n, r.b1v, r.b1n,
+                        r.s1v, r.s1n, r.s2v, r.s2n, r.s3v, r.s3n, r.s4v, r.s4n, r.s5v, r.s5n]
+                cw[r.code][1].writerow(data)
+                cw[r.code][0].flush()
+                if show_data:
+                    print(str(r))
+        StockRtData.subscribe(stock_list, rec_cb, interval=2)
 
 
 class StockUpdateRecord:

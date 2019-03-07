@@ -1,0 +1,1 @@
+../python_tool/gui_curses/gui_curses.py
