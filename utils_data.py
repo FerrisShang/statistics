@@ -26,7 +26,17 @@ __all__ = [
     'StockData',
     'StockRtData',
     'StockUpdateRecord',
+    'get_weekday',
 ]
+
+
+def get_weekday(date):
+    week_str = ['一', '二', '三', '四', '五', '六', '日']
+    if isinstance(date, str):
+        date = datetime.datetime(int(date[0:2]), int(date[2:4]), int(date[4:6]))
+    else:
+        date = datetime.datetime(date)
+    return week_str[date.weekday()]
 
 
 class StockType(IntEnum):
@@ -47,9 +57,11 @@ class StockTradeStatus(IntEnum):
 
 
 class StockBasicInfo:
+    area = {'3': 'sz', '0': 'sz', '6': 'sh'}
+
     def __init__(self, code, code_name, ipo_date, out_date, stock_type, status):
-        self.key = int(code[3:])
         self.code = code
+        self.key = int(self.code[3:])
         self.code_name = code_name
         self.ipoDate = int(str(ipo_date).replace('-', ''))
         self.outDate = int(str(out_date).replace('-', '')) if out_date is not '' else 20991231
@@ -59,6 +71,14 @@ class StockBasicInfo:
     def __str__(self):
         return '{} {} {} {:06d} {:06d} {}'.format(self.code, self.type.name, self.status.name,
                                                   self.ipoDate, self.outDate, self.code_name)
+
+    @staticmethod
+    def code2bao(code):
+        return StockBasicInfo.area[code[-6]] + '.' + code[-6:]
+
+    @staticmethod
+    def code2sina(code):
+        return StockBasicInfo.area[code[-6]] + code[-6:]
 
 
 class StocksBasicInfo:
@@ -267,7 +287,7 @@ class StocksIndustryInfo:
 class StockData:
     NEW_FILE_DATE = '150101'
 
-    def __init__(self, code, load_kd=0, load_k5=0, sync=False):
+    def __init__(self, code, load_kd=0, load_k5=0, sync=False, start_date=0, end_date=999999):
         assert(isinstance(code, str))
         self.code = code
         self.kd_list = []
@@ -275,9 +295,9 @@ class StockData:
         self.sync = sync
         self.sync_len = 0
         if load_kd > 0:
-            self.load_kd(load_kd)
+            self.load_kd(load_kd, start_date, end_date)
         if load_k5 > 0:
-            self.load_k5(load_k5)
+            self.load_k5(load_k5, start_date, end_date)
         if sync:
             if len(self.kd_list) <= 1 or len(self.k5_list) == 0 or \
                     (self.kd_list[-1].date_num != self.k5_list[-1][0].date_num and
@@ -294,7 +314,7 @@ class StockData:
                         break
 
     @staticmethod
-    def parse_hex_k5(path, days):
+    def parse_hex_k5(path, days, start_date=0, end_date=999999):
         ret_list = []
         data_list = []
         size = os.path.getsize(path)
@@ -304,9 +324,15 @@ class StockData:
                 f.seek(-days * Data5.HEX_LEN * 48, 2)  # from the end of file
             else:
                 days = size//Data5.HEX_LEN//48
+            all_data = f.read(days * 48 * Data5.HEX_LEN)
             for i in range(days * 48):
-                item_data = f.read(Data5.HEX_LEN)
-                data_list.append(Data5(*unpack(Data5.FMT_HEX, item_data)))
+                item_data = all_data[i * Data5.HEX_LEN:(i+1) * Data5.HEX_LEN]
+                data = Data5(*unpack(Data5.FMT_HEX, item_data))
+                if start_date <= data.date_num:
+                    if data.date_num <= end_date:
+                        data_list.append(data)
+                    else:
+                        break
             f.close()
             if (len(data_list) % 48) != 0:  # lose part data of a day
                 print('Data seems wrong: {}  {}'.format(path, len(data_list)))
@@ -317,7 +343,7 @@ class StockData:
             print('File size error: ' + path)
 
     @staticmethod
-    def parse_hex_kd(path, days):
+    def parse_hex_kd(path, days, start_date=0, end_date=999999):
         ret_list = []
         size = os.path.getsize(path)
         if 0 == (size % DataD.HEX_LEN):
@@ -326,31 +352,37 @@ class StockData:
                 f.seek(-days * DataD.HEX_LEN, 2)  # from the end of file
             else:
                 days = size//DataD.HEX_LEN
+            all_data = f.read(days * DataD.HEX_LEN)
             for i in range(days):
-                item_data = f.read(DataD.HEX_LEN)
+                item_data = all_data[i * DataD.HEX_LEN:(i+1)*DataD.HEX_LEN]
                 params = unpack(DataD.FMT_HEX, item_data)
-                ret_list.append(DataD(*(params[:5]+params[6:])))  # ignore unused integer
+                data = DataD(*(params[:5]+params[6:]))  # ignore unused integer
+                if start_date <= data.date_num:
+                    if data.date_num <= end_date:
+                        ret_list.append(data)
+                    else:
+                        break
             f.close()
             return ret_list
         else:
             print('File size error: ' + path)
 
-    def load_kd(self, days):
+    def load_kd(self, days, start_date=0, end_date=999999):
         path = UtilsConfig.get_stock_data_path(self.code, stock_type='kd')
         if path is not None and os.path.isfile(path):
-            self.kd_list = StockData.parse_hex_kd(path, days)
+            self.kd_list = StockData.parse_hex_kd(path, days, start_date, end_date)
             return True
         else:
-            print('Load kd error')
+            print(self.code, 'Load kd error')
             return False
 
-    def load_k5(self, days):
+    def load_k5(self, days, start_date=0, end_date=999999):
         path = UtilsConfig.get_stock_data_path(self.code, stock_type='k5')
         if path is not None and os.path.isfile(path):
-            self.k5_list = StockData.parse_hex_k5(path, days)
+            self.k5_list = StockData.parse_hex_k5(path, days, start_date, end_date)
             return True
         else:
-            print('Load k5 error')
+            print(self.code, 'Load k5 error')
             return False
 
 
@@ -375,7 +407,7 @@ class Data5:
         self.amount = float(amount)
 
     def __str__(self):
-        return '{}  {:6.2f}  {:6.2f}  {:6.2f}  {:6.2f}  {:10d}  {:.2f}'. \
+        return '{}  {:6.2f}  {:6.2f}  {:6.2f}  {:6.2f}  {:10d}  {:.0f}'. \
             format(self.time_str, self.open, self.close,
                    self.high, self.low, self.volume, self.amount)
 
@@ -419,8 +451,8 @@ class DataD:
             self.pbMRQ, self.isST = 0.0, False
 
     def __str__(self):
-        return '{}  {:6.2f}  {:6.2f}  {:6.2f}  {:6.2f}  {:10d}  {:5.2f}  {:.2f}  {}'. \
-            format(self.date_str, self.open, self.close,
+        return '{}({})  {:6.2f}  {:6.2f}  {:6.2f}  {:6.2f}  {:10d}  {:5.2f}  {:.0f}  {}'. \
+            format(self.date_str, get_weekday(self.date_str), self.open, self.close,
                    self.high, self.low, self.volume, self.turn, self.amount, self.trade_status)
 
 
@@ -535,7 +567,7 @@ class StockRtData:
             assert(isinstance(r, DataRt))
             if value_change or volume_change:
                 if r.code not in cw:
-                    file = open('{}{:06d}.csv'.format(r.date, r.code), 'w+', newline='')
+                    file = open('{}{:06d}.csv'.format(r.date, r.code), 'a', newline='')
                     cw[r.code] = (file, csv.writer(file, dialect='excel'))
                 data = [r.time, r.new, r.high, r.low, r.volume, r.amount,
                         r.b5v, r.b5n, r.b4v, r.b4n, r.b3v, r.b3n, r.b2v, r.b2n, r.b1v, r.b1n,

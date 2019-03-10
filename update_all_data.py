@@ -5,6 +5,7 @@ import time
 
 
 __all__ = [
+    'update_data',
     'update_all_data'
 ]
 
@@ -19,6 +20,18 @@ def update_record(code, update_kd, update_k5, i, item_num):
         sur.update_k5()
         print('\r({}/{}) {} Update k5 finished'.format(
             i, item_num, code), end='', flush=True)
+
+
+def update_data(stock_code, update_kd=True, update_k5=True):
+    BaoStock.login()
+    sur = StockUpdateRecord(StockBasicInfo.code2bao(stock_code))
+    if update_kd:
+        sur.update_kd()
+        print(stock_code, 'Update kd finished')
+    if update_k5:
+        sur.update_k5()
+        print(stock_code, 'Update k5 finished')
+    BaoStock.logout()
 
 
 def update_all_data(update_kd=False, update_k5=False):
