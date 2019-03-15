@@ -9,6 +9,7 @@ from struct import pack, unpack
 from utils_baostock import *
 from copy import deepcopy
 from threading import Thread
+from pinyin import *
 
 __all__ = [
     'Data5',
@@ -145,6 +146,14 @@ class StocksBasicInfo:
     def dump(self):
         for key, value in self.infolist.items():
             print(value)
+
+    def get_pinyin(self, code):
+        if isinstance(code, str):
+            code = int(code[-6:])
+        code_dict = self.get_dict()
+        if code not in code_dict:
+            return '????'
+        return ''.join([PinYin.get(c)[0][0] for c in code_dict[code].code_name]).upper()
 
 
 class StockSuperiorInfo:
@@ -560,7 +569,8 @@ class StockRtData:
                    (rt1.b5n, rt1.b5v, rt1.s5n, rt1.s5v) == (rt2.b5n, rt2.b5v, rt2.s5n, rt2.s5v)
 
     @staticmethod
-    def to_csv(stock_list, show_data=True):
+    def to_csv(stock_list, callback=None, param=None):
+        stock_list = [StockBasicInfo.code2sina(s) for s in stock_list]
         cw = {}
 
         def rec_cb(r, value_change, volume_change, user_param):
@@ -574,9 +584,9 @@ class StockRtData:
                         r.s1v, r.s1n, r.s2v, r.s2n, r.s3v, r.s3n, r.s4v, r.s4n, r.s5v, r.s5n]
                 cw[r.code][1].writerow(data)
                 cw[r.code][0].flush()
-                if show_data:
-                    print(str(r))
-        StockRtData.subscribe(stock_list, rec_cb, interval=2)
+                if callback is not None:
+                    callback(r, value_change, volume_change, user_param)
+        StockRtData.subscribe(stock_list, rec_cb, interval=2, param=param)
 
 
 class StockUpdateRecord:

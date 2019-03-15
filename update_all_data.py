@@ -14,11 +14,11 @@ def update_record(code, update_kd, update_k5, i, item_num):
     sur = StockUpdateRecord(code)
     if update_kd:
         sur.update_kd()
-        print('\r({}/{}) {} Update kd finished'.format(
+        print('\r({}/{}) {} Update kd finished    '.format(
             i, item_num, code), end='', flush=True)
     if update_k5:
         sur.update_k5()
-        print('\r({}/{}) {} Update k5 finished'.format(
+        print('\r({}/{}) {} Update k5 finished    '.format(
             i, item_num, code), end='', flush=True)
 
 
@@ -27,10 +27,10 @@ def update_data(stock_code, update_kd=True, update_k5=True):
     sur = StockUpdateRecord(StockBasicInfo.code2bao(stock_code))
     if update_kd:
         sur.update_kd()
-        print(stock_code, 'Update kd finished')
+        print(stock_code, 'Update kd finished' + ' ' * 40)
     if update_k5:
         sur.update_k5()
-        print(stock_code, 'Update k5 finished')
+        print(stock_code, 'Update k5 finished' + ' ' * 40)
     BaoStock.logout()
 
 
@@ -49,11 +49,11 @@ def update_all_data(update_kd=False, update_k5=False):
             sur = StockUpdateRecord(item_list[i].code)
             if update_kd:
                 sur.update_kd()
-                print('\r({}/{}) {} Update kd finished'.format(
+                print('\r({}/{}) {} Update kd finished    '.format(
                     i, item_num, item_list[i].code), end='', flush=True)
             if update_k5:
                 sur.update_k5()
-                print('\r({}/{}) {} Update k5 finished'.format(
+                print('\r({}/{}) {} Update k5 finished    '.format(
                     i, item_num, item_list[i].code), end='', flush=True)
     else:
         with concurrent.futures.ThreadPoolExecutor(1) as executor:
@@ -62,7 +62,7 @@ def update_all_data(update_kd=False, update_k5=False):
                 if item_list[i].status is StockStatus.DELISTING:
                     continue
                 executor.submit(update_record, item_list[i].code, update_kd, update_k5, i, item_num)
-    print('\rUpdate finished.')
+    print('\rUpdate finished.' + ' ' * 40)
     BaoStock.logout()
 
 
