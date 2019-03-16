@@ -1,6 +1,7 @@
 import os
 import datetime
 import requests
+import time
 import csv
 from collections import OrderedDict
 from utils_config import UtilsConfig
@@ -36,8 +37,8 @@ def get_weekday(date):
     if isinstance(date, str):
         date = datetime.datetime(int(date[0:2]), int(date[2:4]), int(date[4:6]))
     else:
-        date = datetime.datetime(date)
-    return week_str[date.weekday()]
+        date = datetime.datetime(date//10000 % 100, date//100 % 100, date % 100)
+    return date.weekday(), week_str[date.weekday()]
 
 
 class StockType(IntEnum):
@@ -461,7 +462,7 @@ class DataD:
 
     def __str__(self):
         return '{}({})  {:6.2f}  {:6.2f}  {:6.2f}  {:6.2f}  {:10d}  {:5.2f}  {:.0f}  {}'. \
-            format(self.date_str, get_weekday(self.date_str), self.open, self.close,
+            format(self.date_str, get_weekday(self.date_str)[1], self.open, self.close,
                    self.high, self.low, self.volume, self.turn, self.amount, self.trade_status)
 
 
@@ -541,7 +542,7 @@ class StockRtData:
             return res
 
     @staticmethod
-    def subscribe(sub_list, sub_cb, interval=10, param=None):
+    def subscribe(sub_list, sub_cb, interval=10, measure_time=(5, 30, 0), param=None):
         assert(isinstance(sub_list, list))
         assert(sub_cb is not None)
 
@@ -550,14 +551,22 @@ class StockRtData:
                 res = StockRtData.get(stocks_list)
                 StockRtData._sub_cb(res)
                 sleep(StockRtData.interval)
+                if time.time() > StockRtData.finish_time:
+                    break
+            StockRtData.status = StockRtData.ST_UNSUBCRIBE
+            StockRtData.last_rec.clear()
         if StockRtData.status is not StockRtData.ST_UNSUBCRIBE:
             print('Already subscribed.')
             return
         StockRtData.status = StockRtData.ST_SUBCRIBED
         StockRtData.sub_cb = sub_cb
         StockRtData.interval = interval
+        StockRtData.finish_time = time.time() + \
+                                  measure_time[0] * 3600 + measure_time[1] * 60 + measure_time[2]
         StockRtData.param = param
-        Thread(target=_sub_get, args=[sub_list]).start()
+        th = Thread(target=_sub_get, args=[sub_list])
+        th.start()
+        th.join()
 
     @staticmethod
     def is_5change(rt1, rt2):
@@ -569,7 +578,7 @@ class StockRtData:
                    (rt1.b5n, rt1.b5v, rt1.s5n, rt1.s5v) == (rt2.b5n, rt2.b5v, rt2.s5n, rt2.s5v)
 
     @staticmethod
-    def to_csv(stock_list, callback=None, param=None):
+    def to_csv(stock_list, callback=None, param=None, interval=10, measure_time=(5, 30, 0),):
         stock_list = [StockBasicInfo.code2sina(s) for s in stock_list]
         cw = {}
 
@@ -586,7 +595,7 @@ class StockRtData:
                 cw[r.code][0].flush()
                 if callback is not None:
                     callback(r, value_change, volume_change, user_param)
-        StockRtData.subscribe(stock_list, rec_cb, interval=2, param=param)
+        StockRtData.subscribe(stock_list, rec_cb, interval, measure_time, param=param)
 
 
 class StockUpdateRecord:
