@@ -1,6 +1,4 @@
 import baostock as bs
-import pandas as pd
-import numpy as np
 from time import sleep
 
 
@@ -53,9 +51,7 @@ class BaoStock:
         data_list = []
         while (result_data.error_code == '0') & result_data.next():
             data_list.append(result_data.get_row_data())
-        result = pd.DataFrame(data_list, columns=result_data.fields)
-        result_array = np.array(result)
-        return result_array.tolist()
+        return data_list
 
     @staticmethod
     def query_basic(code='', code_name=''):

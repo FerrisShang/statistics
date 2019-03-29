@@ -21,7 +21,7 @@ def update_all_info():
     ssi_sz50.load_from_server()
     ssi_hz300.load_from_server()
     ssi_zz500.load_from_server()
-    print('\rAll info download success.', flush=True)
+    print('\rAll info download success.   ', flush=True)
     BaoStock.logout()
     # save data to local
     sbi.save_to_file('stock_all.list')
