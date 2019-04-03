@@ -24,7 +24,10 @@ class SocketUtil(object):
         # 1. 判断类属性是否是空对象
         if cls.instance is None:
             # 2. 调用父类的方法，为第一个对象分配空间
-            cls.instance = super().__new__(cls)
+            try:
+                cls.instance = super().__new__(cls)
+            except:
+                cls.instance = super(SocketUtil, cls).__new__(cls)
         # 3. 返回类属性保存的对象引用
         return cls.instance
 
@@ -62,7 +65,10 @@ def send_msg(msg):
                 # str 类型 -> bytes 类型
                 # msg = msg + "<![CDATA[]]>"  # 在消息结尾追加“消息之间的分隔符”，压缩时的分隔符
                 msg = msg + "\n"  # 在消息结尾追加“消息之间的分隔符”，不压缩时的分隔符
-                default_socket.send(bytes(msg, encoding='utf-8'))
+                try:
+                    default_socket.send(bytes(msg, encoding='utf-8'))
+                except TypeError:
+                    default_socket.send(bytes(msg))
                 receive = b""
                 while True:
                     recv = default_socket.recv(8192)
@@ -71,17 +77,17 @@ def send_msg(msg):
                     if receive[-13:] == b"<![CDATA[]]>\n":  # 压缩时的结尾分隔符长度
                     # if receive[-1:] == b"\n":  # 不压缩时的结尾分隔符长度
                         break
-                # return bytes.decode(zlib.decompress(receive))  # 进行解压
+                # return bytes.decode(zlib.decompress(receive), 'utf-8')  # 进行解压
                 head_bytes = receive[0:cons.MESSAGE_HEADER_LENGTH]
-                head_str = bytes.decode(head_bytes)
+                head_str = bytes.decode(head_bytes, 'utf-8')
                 head_arr = head_str.split(cons.MESSAGE_SPLIT)
                 if head_arr[1] in cons.COMPRESSED_MESSAGE_TYPE_TUPLE:
                     # 消息体需要解压
                     head_inner_length = int(head_arr[2])
-                    body_str = bytes.decode(zlib.decompress(receive[cons.MESSAGE_HEADER_LENGTH:cons.MESSAGE_HEADER_LENGTH + head_inner_length]))
+                    body_str = bytes.decode(zlib.decompress(receive[cons.MESSAGE_HEADER_LENGTH:cons.MESSAGE_HEADER_LENGTH + head_inner_length]), 'utf-8')
                     return head_str + body_str
                 else:
-                    return bytes.decode(receive)  # 不进行解压
+                    return bytes.decode(receive, 'utf-8')  # 不进行解压
             else:
                 return None
         else:
@@ -102,7 +108,11 @@ class SocketRealTimeUtil(object):
         # 1. 判断类属性是否是空对象
         if cls.instance is None:
             # 2. 调用父类的方法，为第一个对象分配空间
-            cls.instance = super().__new__(cls)
+            try:
+                cls.instance = super().__new__(cls)
+            except:
+                cls.instance = super(SocketRealTimeUtil, cls).__new__(cls)
+
         # 3. 返回类属性保存的对象引用
         return cls.instance
 
@@ -139,7 +149,10 @@ def send_real_time_msg(msg):
             if default_socket is not None:
                 # str 类型 -> bytes 类型
                 msg = msg + "<![CDATA[]]>"  # 在消息结尾追加“消息之间的分隔符”
-                default_socket.send(bytes(msg, encoding='utf-8'))
+                try:
+                    default_socket.send(bytes(msg, encoding='utf-8'))
+                except TypeError:
+                    default_socket.send(bytes(msg))
                 if msg.split(cons.MESSAGE_SPLIT)[1] == cons.MESSAGE_TYPE_LOGOUT_REAL_TIME_REQUEST:
                     default_socket.close()
                     setattr(context, "default_socket", None)
@@ -152,8 +165,8 @@ def send_real_time_msg(msg):
                         # 判断是否读取完
                         if receive[-12:] == b"<![CDATA[]]>":
                             break
-                    # return bytes.decode(receive)
-                    return bytes.decode(zlib.decompress(receive))
+                    # return bytes.decode(receive, 'utf-8')
+                    return bytes.decode(zlib.decompress(receive), 'utf-8')
             else:
                 return None
         else:
@@ -173,7 +186,10 @@ def send_cancel_real_time_msg(msg):
             if default_socket is not None:
                 # str 类型 -> bytes 类型
                 msg = msg + "<![CDATA[]]>"  # 在消息结尾追加“消息之间的分隔符”
-                default_socket.send(bytes(msg, encoding='utf-8'))
+                try:
+                    default_socket.send(bytes(msg, encoding='utf-8'))
+                except TypeError:
+                    default_socket.send(bytes(msg))
             else:
                 return None
         else:
@@ -212,7 +228,7 @@ def real_time_subscibe_thread(receive, socket_real_time, data):
                 # 由于real_time_byte可能为b''，即为空，需要判断
                 if len(real_time_byte) > 0:
                     try:
-                        real_time = bytes.decode(zlib.decompress(real_time_byte))
+                        real_time = bytes.decode(zlib.decompress(real_time_byte), 'utf-8')
                     except Exception as ex:
                         print(ex)
                         print("数据解压缩异常，请稍后再试或联系管理员。")
@@ -230,7 +246,10 @@ def real_time_subscibe_thread(receive, socket_real_time, data):
                             msg_body = realtime_arr_item[cons.MESSAGE_HEADER_LENGTH:cons.MESSAGE_HEADER_LENGTH + msg_body_length]
 
                             receive_crc = realtime_arr_item[cons.MESSAGE_HEADER_LENGTH + msg_body_length:]  # 传递进来的CRC校验码
-                            crc32str = zlib.crc32(bytes(msg_header+msg_body, "utf8"))  # 客户端计算的CRC校验码
+                            try:
+                                crc32str = zlib.crc32(bytes(msg_header + msg_body, "utf8"))  # 客户端计算的CRC校验码
+                            except TypeError:
+                                crc32str = zlib.crc32(bytes(msg_header + msg_body))  # 客户端计算的CRC校验码
                             if receive_crc == str(crc32str):
 
                                 body_arr = msg_body.split(cons.MESSAGE_SPLIT)
@@ -257,7 +276,10 @@ def real_time_subscibe_thread(receive, socket_real_time, data):
                         msg_body = real_time[cons.MESSAGE_HEADER_LENGTH:cons.MESSAGE_HEADER_LENGTH + msg_body_length]
 
                         receive_crc = real_time[cons.MESSAGE_HEADER_LENGTH + msg_body_length:]  # 传递进来的CRC校验码
-                        crc32str = zlib.crc32(bytes(msg_header+msg_body, "utf8"))  # 客户端计算的CRC校验码
+                        try:
+                            crc32str = zlib.crc32(bytes(msg_header + msg_body, "utf8"))  # 客户端计算的CRC校验码
+                        except TypeError:
+                            crc32str = zlib.crc32(bytes(msg_header + msg_body))  # 客户端计算的CRC校验码
                         if receive_crc == str(crc32str):
 
                             body_arr = msg_body.split(cons.MESSAGE_SPLIT)
@@ -279,7 +301,7 @@ def real_time_subscibe_thread(receive, socket_real_time, data):
                 else:
                     pass
 #                     print(real_time_byte)
-#                     print(bytes.decode(real_time_byte))
+#                     print(bytes.decode(real_time_byte), 'utf-8')
 
 
 def send_real_time_subscibe(msg, data):
@@ -291,17 +313,20 @@ def send_real_time_subscibe(msg, data):
             if socket_real_time is not None:
                 # str 类型 -> bytes 类型
                 msg = msg + "<![CDATA[]]>"  # 在消息结尾追加“消息之间的分隔符”
-                socket_real_time.send(bytes(msg, encoding='utf-8'))
+                try:
+                    socket_real_time.send(bytes(msg, encoding='utf-8'))
+                except TypeError:
+                    socket_real_time.send(bytes(msg))
                 receive = b""
                 while True:
                     recv = socket_real_time.recv(8192)
                     receive += recv
                     # 判断是否读取完
                     if receive[-12:] == b"<![CDATA[]]>":
-                        # receive_data = bytes.decode(receive)
+                        # receive_data = bytes.decode(receive, 'utf-8')
                         """ 解压  """
                         try:
-                            receive_data = bytes.decode(zlib.decompress(receive[:-12]))
+                            receive_data = bytes.decode(zlib.decompress(receive[:-12]), 'utf-8')
                         except Exception as ex:
                             receive = b""
                             print(ex)

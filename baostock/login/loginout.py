@@ -46,7 +46,10 @@ def login(user_id='anonymous', password='123456', options=0):
         cons.MESSAGE_TYPE_LOGIN_REQUEST, len(msg_body))
     head_body = msg_header + msg_body
 
-    crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    try:
+        crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    except TypeError:
+        crc32str = zlib.crc32(bytes(head_body))
 
     # 发送并接收消息
     mySocketUtil = sock.SocketUtil()
@@ -107,7 +110,10 @@ def logout(user_id='anonymous'):
 
     head_body = msg_header + msg_body
 
-    crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    try:
+        crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    except TypeError:
+        crc32str = zlib.crc32(bytes(head_body))
 
     # 发送并接收消息
     receive_data = sock.send_msg(
@@ -178,7 +184,10 @@ def login_real_time(user_id='anonymous', password='123456', options=0):
         cons.MESSAGE_TYPE_LOGIN_REAL_TIME_REQUEST, len(msg_body))
     head_body = msg_header + msg_body
 
-    crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    try:
+        crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    except TypeError:
+        crc32str = zlib.crc32(bytes(head_body))
 
     # 发送并接收消息
     mySocketUtil = sock.SocketRealTimeUtil()
@@ -240,7 +249,10 @@ def logout_real_time(user_id='anonymous'):
 
     head_body = msg_header + msg_body
 
-    crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    try:
+        crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    except TypeError:
+        crc32str = zlib.crc32(bytes(head_body))
 
     # 发送并接收消息
     receive_data = sock.send_real_time_msg(

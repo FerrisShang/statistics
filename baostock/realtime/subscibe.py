@@ -66,7 +66,10 @@ def subscribe_by_code(code_list, subscribe_type=0, fncallback=None, options="", 
     data.msg_body = msg_body
 
     head_body = msg_header + msg_body
-    crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    try:
+        crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    except TypeError:
+        crc32str = zlib.crc32(bytes(head_body))
 
     sock.send_real_time_subscibe(head_body + cons.MESSAGE_SPLIT + str(crc32str), data)
 
@@ -107,7 +110,10 @@ def cancel_subscribe(ident):
         cons.MESSAGE_TYPE_CANCEL_SUBSCRIBE_REQUEST, len(msg_body))
     head_body = msg_header + msg_body
 
-    crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    try:
+        crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    except TypeError:
+        crc32str = zlib.crc32(bytes(head_body))
 
     # 向服务器发送取消订阅
     sock.send_cancel_real_time_msg(head_body + cons.MESSAGE_SPLIT + str(crc32str))

@@ -74,7 +74,10 @@ def query_dividend_data(code, year=None, yearType="report"):
     data.msg_body = msg_body
 
     head_body = msg_header + msg_body
-    crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    try:
+        crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    except TypeError:
+        crc32str = zlib.crc32(bytes(head_body))
     receive_data = sock.send_msg(head_body + cons.MESSAGE_SPLIT + str(crc32str))
 
     if receive_data is None or receive_data.strip() == "":
@@ -153,7 +156,10 @@ def query_adjust_factor(code, start_date=None, end_date=None):
     data.msg_body = msg_body
 
     head_body = msg_header + msg_body
-    crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    try:
+        crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    except TypeError:
+        crc32str = zlib.crc32(bytes(head_body))
     receive_data = sock.send_msg(head_body + cons.MESSAGE_SPLIT + str(crc32str))
 
     if receive_data is None or receive_data.strip() == "":
@@ -240,7 +246,10 @@ def query_profit_data(code, year=None, quarter=None):
     data.msg_body = msg_body
 
     head_body = msg_header + msg_body
-    crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    try:
+        crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    except TypeError:
+        crc32str = zlib.crc32(bytes(head_body))
     receive_data = sock.send_msg(head_body + cons.MESSAGE_SPLIT + str(crc32str))
 
     if receive_data is None or receive_data.strip() == "":
@@ -326,7 +335,10 @@ def query_operation_data(code, year=None, quarter=None):
     data.msg_body = msg_body
 
     head_body = msg_header + msg_body
-    crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    try:
+        crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    except TypeError:
+        crc32str = zlib.crc32(bytes(head_body))
     receive_data = sock.send_msg(head_body + cons.MESSAGE_SPLIT + str(crc32str))
 
     if receive_data is None or receive_data.strip() == "":
@@ -412,7 +424,10 @@ def query_growth_data(code, year=None, quarter=None):
     data.msg_body = msg_body
 
     head_body = msg_header + msg_body
-    crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    try:
+        crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    except TypeError:
+        crc32str = zlib.crc32(bytes(head_body))
     receive_data = sock.send_msg(head_body + cons.MESSAGE_SPLIT + str(crc32str))
 
     if receive_data is None or receive_data.strip() == "":
@@ -498,7 +513,10 @@ def query_dupont_data(code, year=None, quarter=None):
     data.msg_body = msg_body
 
     head_body = msg_header + msg_body
-    crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    try:
+        crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    except TypeError:
+        crc32str = zlib.crc32(bytes(head_body))
     receive_data = sock.send_msg(head_body + cons.MESSAGE_SPLIT + str(crc32str))
 
     if receive_data is None or receive_data.strip() == "":
@@ -584,7 +602,10 @@ def query_balance_data(code, year=None, quarter=None):
     data.msg_body = msg_body
 
     head_body = msg_header + msg_body
-    crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    try:
+        crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    except TypeError:
+        crc32str = zlib.crc32(bytes(head_body))
     receive_data = sock.send_msg(head_body + cons.MESSAGE_SPLIT + str(crc32str))
 
     if receive_data is None or receive_data.strip() == "":
@@ -670,7 +691,10 @@ def query_cash_flow_data(code, year=None, quarter=None):
     data.msg_body = msg_body
 
     head_body = msg_header + msg_body
-    crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    try:
+        crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    except TypeError:
+        crc32str = zlib.crc32(bytes(head_body))
     receive_data = sock.send_msg(head_body + cons.MESSAGE_SPLIT + str(crc32str))
 
     if receive_data is None or receive_data.strip() == "":

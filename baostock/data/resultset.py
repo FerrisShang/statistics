@@ -76,7 +76,10 @@ class ResultData(object):
                     self.msg_type, len(msg_body))
 
             head_body = msg_header + msg_body
-            crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+            try:
+                crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+            except TypeError:
+                crc32str = zlib.crc32(bytes(head_body))
             receive_data = sock.send_msg(
                         head_body + cons.MESSAGE_SPLIT + str(crc32str))
 

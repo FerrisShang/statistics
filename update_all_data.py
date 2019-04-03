@@ -10,15 +10,24 @@ __all__ = [
 ]
 
 
+def debug(s, end=None, flush=True):
+    try:
+        print(s, end=end, flush=flush)
+    except:
+        if end == '':
+            print(s,)
+        else:
+            print(s)
+
 def update_record(code, update_kd, update_k5, i, item_num):
     sur = StockUpdateRecord(code)
     if update_kd:
         sur.update_kd()
-        print('\r({}/{}) {} Update kd finished    '.format(
+        debug('\r({}/{}) {} Update kd finished    '.format(
             i, item_num, code), end='', flush=True)
     if update_k5:
         sur.update_k5()
-        print('\r({}/{}) {} Update k5 finished    '.format(
+        debug('\r({}/{}) {} Update k5 finished    '.format(
             i, item_num, code), end='', flush=True)
 
 
@@ -49,11 +58,11 @@ def update_all_data(update_kd=False, update_k5=False):
             sur = StockUpdateRecord(item_list[i].code)
             if update_kd:
                 sur.update_kd()
-                print('\r({}/{}) {} Update kd finished    '.format(
+                debug('\r({}/{}) {} Update kd finished    '.format(
                     i, item_num, item_list[i].code), end='', flush=True)
             if update_k5:
                 sur.update_k5()
-                print('\r({}/{}) {} Update k5 finished    '.format(
+                debug('\r({}/{}) {} Update k5 finished    '.format(
                     i, item_num, item_list[i].code), end='', flush=True)
     else:
         with concurrent.futures.ThreadPoolExecutor(1) as executor:

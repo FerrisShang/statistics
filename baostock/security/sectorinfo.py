@@ -65,7 +65,10 @@ def query_stock_industry(code="", date=""):
     data.msg_body = msg_body
 
     head_body = msg_header + msg_body
-    crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    try:
+        crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    except TypeError:
+        crc32str = zlib.crc32(bytes(head_body))
     receive_data = sock.send_msg(head_body + cons.MESSAGE_SPLIT + str(crc32str))
 
     if receive_data is None or receive_data.strip() == "":
@@ -131,7 +134,10 @@ def query_hs300_stocks(date=""):
     data.msg_body = msg_body
 
     head_body = msg_header + msg_body
-    crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    try:
+        crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    except TypeError:
+        crc32str = zlib.crc32(bytes(head_body))
     receive_data = sock.send_msg(head_body + cons.MESSAGE_SPLIT + str(crc32str))
 
     if receive_data is None or receive_data.strip() == "":
@@ -196,7 +202,10 @@ def query_sz50_stocks(date=""):
     data.msg_body = msg_body
 
     head_body = msg_header + msg_body
-    crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    try:
+        crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    except TypeError:
+        crc32str = zlib.crc32(bytes(head_body))
     receive_data = sock.send_msg(head_body + cons.MESSAGE_SPLIT + str(crc32str))
 
     if receive_data is None or receive_data.strip() == "":
@@ -261,7 +270,10 @@ def query_zz500_stocks(date=""):
     data.msg_body = msg_body
 
     head_body = msg_header + msg_body
-    crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    try:
+        crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    except TypeError:
+        crc32str = zlib.crc32(bytes(head_body))
     receive_data = sock.send_msg(head_body + cons.MESSAGE_SPLIT + str(crc32str))
 
     if receive_data is None or receive_data.strip() == "":
@@ -325,7 +337,10 @@ def query_terminated_stocks(date=""):
     data.msg_body = msg_body
 
     head_body = msg_header + msg_body
-    crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    try:
+        crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    except TypeError:
+        crc32str = zlib.crc32(bytes(head_body))
     receive_data = sock.send_msg(head_body + cons.MESSAGE_SPLIT + str(crc32str))
 
     if receive_data is None or receive_data.strip() == "":
@@ -389,7 +404,10 @@ def query_suspended_stocks(date=""):
     data.msg_body = msg_body
 
     head_body = msg_header + msg_body
-    crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    try:
+        crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    except TypeError:
+        crc32str = zlib.crc32(bytes(head_body))
     receive_data = sock.send_msg(head_body + cons.MESSAGE_SPLIT + str(crc32str))
 
     if receive_data is None or receive_data.strip() == "":
@@ -453,7 +471,10 @@ def query_st_stocks(date=""):
     data.msg_body = msg_body
 
     head_body = msg_header + msg_body
-    crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    try:
+        crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    except TypeError:
+        crc32str = zlib.crc32(bytes(head_body))
     receive_data = sock.send_msg(head_body + cons.MESSAGE_SPLIT + str(crc32str))
 
     if receive_data is None or receive_data.strip() == "":
@@ -517,7 +538,10 @@ def query_starst_stocks(date=""):
     data.msg_body = msg_body
 
     head_body = msg_header + msg_body
-    crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    try:
+        crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    except TypeError:
+        crc32str = zlib.crc32(bytes(head_body))
     receive_data = sock.send_msg(head_body + cons.MESSAGE_SPLIT + str(crc32str))
 
     if receive_data is None or receive_data.strip() == "":
@@ -595,7 +619,10 @@ def query_stock_concept(code="", date=""):
     data.msg_body = msg_body
 
     head_body = msg_header + msg_body
-    crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    try:
+        crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    except TypeError:
+        crc32str = zlib.crc32(bytes(head_body))
     receive_data = sock.send_msg(head_body + cons.MESSAGE_SPLIT + str(crc32str))
 
     if receive_data is None or receive_data.strip() == "":
@@ -673,7 +700,10 @@ def query_stock_area(code="", date=""):
     data.msg_body = msg_body
 
     head_body = msg_header + msg_body
-    crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    try:
+        crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    except TypeError:
+        crc32str = zlib.crc32(bytes(head_body))
     receive_data = sock.send_msg(head_body + cons.MESSAGE_SPLIT + str(crc32str))
 
     if receive_data is None or receive_data.strip() == "":
@@ -739,7 +769,10 @@ def query_ame_stocks(date=""):
     data.msg_body = msg_body
 
     head_body = msg_header + msg_body
-    crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    try:
+        crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    except TypeError:
+        crc32str = zlib.crc32(bytes(head_body))
     receive_data = sock.send_msg(head_body + cons.MESSAGE_SPLIT + str(crc32str))
 
     if receive_data is None or receive_data.strip() == "":
@@ -803,7 +836,10 @@ def query_gem_stocks(date=""):
     data.msg_body = msg_body
 
     head_body = msg_header + msg_body
-    crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    try:
+        crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    except TypeError:
+        crc32str = zlib.crc32(bytes(head_body))
     receive_data = sock.send_msg(head_body + cons.MESSAGE_SPLIT + str(crc32str))
 
     if receive_data is None or receive_data.strip() == "":
@@ -868,7 +904,10 @@ def query_shhk_stocks(date=""):
     data.msg_body = msg_body
 
     head_body = msg_header + msg_body
-    crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    try:
+        crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    except TypeError:
+        crc32str = zlib.crc32(bytes(head_body))
     receive_data = sock.send_msg(head_body + cons.MESSAGE_SPLIT + str(crc32str))
 
     if receive_data is None or receive_data.strip() == "":
@@ -932,7 +971,10 @@ def query_szhk_stocks(date=""):
     data.msg_body = msg_body
 
     head_body = msg_header + msg_body
-    crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    try:
+        crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    except TypeError:
+        crc32str = zlib.crc32(bytes(head_body))
     receive_data = sock.send_msg(head_body + cons.MESSAGE_SPLIT + str(crc32str))
 
     if receive_data is None or receive_data.strip() == "":
@@ -996,7 +1038,10 @@ def query_stocks_in_risk(date=""):
     data.msg_body = msg_body
 
     head_body = msg_header + msg_body
-    crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    try:
+        crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    except TypeError:
+        crc32str = zlib.crc32(bytes(head_body))
     receive_data = sock.send_msg(head_body + cons.MESSAGE_SPLIT + str(crc32str))
 
     if receive_data is None or receive_data.strip() == "":

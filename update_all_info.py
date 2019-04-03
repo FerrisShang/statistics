@@ -15,13 +15,13 @@ def update_all_info():
     ssi_zz500 = StocksSuperiorInfo(stocks_type=StocksSuperiorInfo.TYPE_ZZ500)
     # load data from server
     BaoStock.login()
-    print('\rLoading all info from server.', end='', flush=True)
+    print('Loading all info from server.')
     sbi.load_from_server()
     sii.load_from_server()
     ssi_sz50.load_from_server()
     ssi_hz300.load_from_server()
     ssi_zz500.load_from_server()
-    print('\rAll info download success.   ', flush=True)
+    print('All info download success.   ')
     BaoStock.logout()
     # save data to local
     sbi.save_to_file('stock_all.list')

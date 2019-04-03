@@ -75,7 +75,10 @@ def query_deposit_rate_data(start_date="", end_date=""):
     data.msg_body = msg_body
 
     head_body = msg_header + msg_body
-    crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    try:
+        crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    except TypeError:
+        crc32str = zlib.crc32(bytes(head_body))
     receive_data = sock.send_msg(head_body + cons.MESSAGE_SPLIT + str(crc32str))
 
     if receive_data is None or receive_data.strip() == "":
@@ -162,7 +165,10 @@ def query_loan_rate_data(start_date="", end_date=""):
     data.msg_body = msg_body
 
     head_body = msg_header + msg_body
-    crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    try:
+        crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    except TypeError:
+        crc32str = zlib.crc32(bytes(head_body))
     receive_data = sock.send_msg(head_body + cons.MESSAGE_SPLIT + str(crc32str))
 
     if receive_data is None or receive_data.strip() == "":
@@ -256,7 +262,10 @@ def query_required_reserve_ratio_data(start_date="", end_date="", yearType="0"):
     data.msg_body = msg_body
 
     head_body = msg_header + msg_body
-    crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    try:
+        crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    except TypeError:
+        crc32str = zlib.crc32(bytes(head_body))
     receive_data = sock.send_msg(head_body + cons.MESSAGE_SPLIT + str(crc32str))
 
     if receive_data is None or receive_data.strip() == "":
@@ -343,7 +352,10 @@ def query_money_supply_data_month(start_date="", end_date=""):
     data.msg_body = msg_body
 
     head_body = msg_header + msg_body
-    crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    try:
+        crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    except TypeError:
+        crc32str = zlib.crc32(bytes(head_body))
     receive_data = sock.send_msg(head_body + cons.MESSAGE_SPLIT + str(crc32str))
 
     if receive_data is None or receive_data.strip() == "":
@@ -429,7 +441,10 @@ def query_money_supply_data_year(start_date="", end_date=""):
     data.msg_body = msg_body
 
     head_body = msg_header + msg_body
-    crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    try:
+        crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    except TypeError:
+        crc32str = zlib.crc32(bytes(head_body))
     receive_data = sock.send_msg(head_body + cons.MESSAGE_SPLIT + str(crc32str))
 
     if receive_data is None or receive_data.strip() == "":
@@ -516,7 +531,10 @@ def query_shibor_data(start_date="", end_date=""):
     data.msg_body = msg_body
 
     head_body = msg_header + msg_body
-    crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    try:
+        crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    except TypeError:
+        crc32str = zlib.crc32(bytes(head_body))
     receive_data = sock.send_msg(head_body + cons.MESSAGE_SPLIT + str(crc32str))
 
     if receive_data is None or receive_data.strip() == "":
@@ -603,7 +621,10 @@ def query_cpi_data(start_date="", end_date=""):
     data.msg_body = msg_body
 
     head_body = msg_header + msg_body
-    crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    try:
+        crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    except TypeError:
+        crc32str = zlib.crc32(bytes(head_body))
     receive_data = sock.send_msg(head_body + cons.MESSAGE_SPLIT + str(crc32str))
 
     if receive_data is None or receive_data.strip() == "":
@@ -690,7 +711,10 @@ def query_ppi_data(start_date="", end_date=""):
     data.msg_body = msg_body
 
     head_body = msg_header + msg_body
-    crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    try:
+        crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    except TypeError:
+        crc32str = zlib.crc32(bytes(head_body))
     receive_data = sock.send_msg(head_body + cons.MESSAGE_SPLIT + str(crc32str))
 
     if receive_data is None or receive_data.strip() == "":
@@ -777,7 +801,10 @@ def query_pmi_data(start_date="", end_date=""):
     data.msg_body = msg_body
 
     head_body = msg_header + msg_body
-    crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    try:
+        crc32str = zlib.crc32(bytes(head_body, encoding='utf-8'))
+    except TypeError:
+        crc32str = zlib.crc32(bytes(head_body))
     receive_data = sock.send_msg(head_body + cons.MESSAGE_SPLIT + str(crc32str))
 
     if receive_data is None or receive_data.strip() == "":
