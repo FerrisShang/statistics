@@ -1,6 +1,5 @@
 from utils_data import *
 from utils_baostock import BaoStock
-import concurrent.futures
 import time
 
 
@@ -12,7 +11,7 @@ __all__ = [
 
 def debug(s, end=None, flush=True):
     try:
-        print(s, end=end, flush=flush)
+        exec('print(s, end=end, flush=flush)')
     except:
         if end == '':
             print(s,)
@@ -50,7 +49,7 @@ def update_all_data(update_kd=False, update_k5=False):
     item_list = sbi.get_list()
     item_num = len(item_list)
     BaoStock.login()
-    if False:
+    if True:
         for i in range(item_num):
             assert(isinstance(item_list[i], StockBasicInfo))
             if item_list[i].status is StockStatus.DELISTING:

@@ -1,3 +1,4 @@
+# -*- coding:utf-8 -*-
 import os
 import datetime
 import requests
@@ -11,6 +12,12 @@ from utils_baostock import *
 from copy import deepcopy
 from threading import Thread
 from pinyin import *
+try:
+    import sys
+    reload(sys)
+    sys.setdefaultencoding('utf-8')
+except:
+    pass
 
 __all__ = [
     'Data5',
@@ -66,7 +73,10 @@ class StockBasicInfo:
         self.key = int(self.code[3:])
         self.code_name = code_name
         self.ipoDate = int(str(ipo_date).replace('-', ''))
-        self.outDate = int(str(out_date).replace('-', '')) if out_date is not '' else 20991231
+        if len(str(out_date).replace('-', '')) == 0:
+            self.outDate = 20991231
+        else:
+            self.outDate = int(str(out_date).replace('-', ''))
         self.type = StockType(int(stock_type))
         self.status = StockStatus(int(status))
 
@@ -90,12 +100,15 @@ class StocksBasicInfo:
     def load_from_file(self, file_name='default.list'):
         path = UtilsConfig.get_stock_list_path(file_name)
         if path is not None and os.path.isfile(path):
-            with open(path, 'r', encoding=UtilsConfig.get_encoding()) as f:
-                for line in f.readlines():
-                    info = StockBasicInfo(*line.split())
-                    self.infolist[info.key] = info
-                f.close()
-                return True
+            try:
+                f = open(path, 'r', encoding=UtilsConfig.get_encoding())
+            except:
+                f = open(path, 'r')
+            for line in f.readlines():
+                info = StockBasicInfo(*line.split())
+                self.infolist[info.key] = info
+            f.close()
+            return True
         else:
             print('load file {} failed.'.format(file_name))
             return False
@@ -110,13 +123,16 @@ class StocksBasicInfo:
     def save_to_file(self, file_name='default.list'):
         path = UtilsConfig.get_stock_list_path(file_name)
         if path is not None:
-            with open(path, 'w', encoding=UtilsConfig.get_encoding()) as f:
-                for key, line in self.infolist.items():
-                    assert(isinstance(line, StockBasicInfo))
-                    f.write('{} {} {} {} {} {}\n'.format(line.code, line.code_name, line.ipoDate, line.outDate,
-                            line.type.numerator, line.status.numerator))
-                f.close()
-                return True
+            try:
+                f = open(path, 'w', encoding=UtilsConfig.get_encoding())
+            except:
+                f = open(path, 'w')
+            for key, line in self.infolist.items():
+                assert(isinstance(line, StockBasicInfo))
+                f.write('{} {} {} {} {} {}\n'.format(line.code, line.code_name, line.ipoDate, line.outDate,
+                        line.type.numerator, line.status.numerator))
+            f.close()
+            return True
         else:
             print('save file {} failed.'.format(file_name))
             return False
@@ -189,12 +205,15 @@ class StocksSuperiorInfo:
     def load_from_file(self):
         path = UtilsConfig.get_stock_list_path(self.list_name)
         if path is not None and os.path.isfile(path):
-            with open(path, 'r', encoding=UtilsConfig.get_encoding()) as f:
-                for line in f.readlines():
-                    info = StockSuperiorInfo(*line.split())
-                    self.infolist[info.key] = info
-                f.close()
-                return True
+            try:
+                f = open(path, 'r', encoding=UtilsConfig.get_encoding())
+            except:
+                f = open(path, 'r')
+            for line in f.readlines():
+                info = StockSuperiorInfo(*line.split())
+                self.infolist[info.key] = info
+            f.close()
+            return True
         else:
             print('load file {} failed.'.format(self.list_name))
             return False
@@ -209,12 +228,15 @@ class StocksSuperiorInfo:
     def save_to_file(self):
         path = UtilsConfig.get_stock_list_path(self.list_name)
         if path is not None:
-            with open(path, 'w', encoding=UtilsConfig.get_encoding()) as f:
-                for key, line in self.infolist.items():
-                    assert(isinstance(line, StockSuperiorInfo))
-                    f.write('{} {} {}\n'.format(line.update_date, line.code, line.code_name))
-                f.close()
-                return True
+            try:
+                f = open(path, 'w', encoding=UtilsConfig.get_encoding())
+            except:
+                f = open(path, 'w')
+            for key, line in self.infolist.items():
+                assert(isinstance(line, StockSuperiorInfo))
+                f.write('{} {} {}\n'.format(line.update_date, line.code, line.code_name))
+            f.close()
+            return True
         else:
             print('save file {} failed.'.format(self.list_name))
             return False
@@ -252,12 +274,15 @@ class StocksIndustryInfo:
     def load_from_file(self):
         path = UtilsConfig.get_stock_list_path(self.list_name)
         if path is not None and os.path.isfile(path):
-            with open(path, 'r', encoding=UtilsConfig.get_encoding()) as f:
-                for line in f.readlines():
-                    info = StockIndustryInfo(*line.split())
-                    self.infolist[info.key] = info
-                f.close()
-                return True
+            try:
+                f = open(path, 'r', encoding=UtilsConfig.get_encoding())
+            except:
+                f = open(path, 'r')
+            for line in f.readlines():
+                info = StockIndustryInfo(*line.split())
+                self.infolist[info.key] = info
+            f.close()
+            return True
         else:
             print('load file {} failed.'.format(self.list_name))
             return False
@@ -272,13 +297,16 @@ class StocksIndustryInfo:
     def save_to_file(self):
         path = UtilsConfig.get_stock_list_path(self.list_name)
         if path is not None:
-            with open(path, 'w', encoding=UtilsConfig.get_encoding()) as f:
-                for key, line in self.infolist.items():
-                    assert(isinstance(line, StockIndustryInfo))
-                    f.write('{} {} {} {} {}\n'.format(line.update_date, line.code, line.code_name,
-                                                      line.industry, line.ind_class))
-                f.close()
-                return True
+            try:
+                f = open(path, 'w', encoding=UtilsConfig.get_encoding())
+            except:
+                f = open(path, 'w')
+            for key, line in self.infolist.items():
+                assert(isinstance(line, StockIndustryInfo))
+                f.write('{} {} {} {} {}\n'.format(line.update_date, line.code, line.code_name,
+                                                  line.industry, line.ind_class))
+            f.close()
+            return True
         else:
             print('save file {} failed.'.format(self.list_name))
             return False
@@ -402,12 +430,10 @@ class Data5:
 
     def __init__(self, v_time, v_open, v_close, v_high, v_low, volume, amount):
         # ['20181109150000000', '18.5400', '18.5200', '18.5500', '18.5000', '99200', '1837097.0000']
-        if isinstance(v_time, str):
-            self.time_str = v_time[2:12]
-        elif isinstance(v_time, int):
+        if isinstance(v_time, int):
             self.time_str = str(v_time)
         else:
-            assert False
+            self.time_str = v_time[2:12]
         self.date_num = int(self.time_str[:6])
         self.open = float(v_open)
         self.close = float(v_close)
@@ -430,12 +456,10 @@ class DataD:
                  turn, trade_status, pctChg, peTTM, psTTM, pcfNcfTTM, pbMRQ, isST):
         # ['2018-11-01', '18.9000', '18.2200', '19.1200', '18.1100', '4301411', '79888895.9000', '3',
         # '3.587307', '1', '1.053792', '179.076255', '16.478888', '71.301441', '3.187132', '0']
-        if isinstance(date, str):
-            self.date_str = date[2:4]+date[5:7]+date[8:10]
-        elif isinstance(date, int):
+        if isinstance(date, int):
             self.date_str = str(date)
         else:
-            assert False
+            self.date_str = date[2:4]+date[5:7]+date[8:10]
         try:
             self.date_num = int(self.date_str)
             self.open = float(v_open)
