@@ -19,7 +19,7 @@ class UtilsConfig:
     PATH_STOCK_LIST = 'STOCK_LIST'
     DATA_NAME_FORMAT = 'DATA_NAME_FORMAT'
 
-    DEFAULT_FILE_ENCODING_WIN = ''
+    DEFAULT_FILE_ENCODING_WIN = 'utf-8'
     DEFAULT_FILE_ENCODING_LINUX = 'utf-8'
     DEFAULT_BASE_PATH_WIN = 'E:\\store\\stock'
     DEFAULT_BASE_PATH_LINUX = '/home/user/stock'

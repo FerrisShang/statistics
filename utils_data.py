@@ -114,7 +114,7 @@ class StocksBasicInfo:
             return False
 
     def load_from_server(self):
-        info_list = BaoStock.query_basic()
+        info_list = Stock.query_basic()
         for line in info_list:
             info = StockBasicInfo(*line)
             self.infolist[info.key] = info
@@ -194,13 +194,13 @@ class StocksSuperiorInfo:
         self.infolist = {}
         if stocks_type == self.TYPE_ZZ500:
             self.list_name = 'zz500.list'
-            self.stock_get_func = BaoStock.query_zz500_stocks
+            self.stock_get_func = Stock.query_zz500_stocks
         elif stocks_type == self.TYPE_SZ50:
             self.list_name = 'sz50.list'
-            self.stock_get_func = BaoStock.query_sz50_stocks
+            self.stock_get_func = Stock.query_sz50_stocks
         else:
             self.list_name = 'hz300.list'
-            self.stock_get_func = BaoStock.query_hs300_stocks
+            self.stock_get_func = Stock.query_hs300_stocks
 
     def load_from_file(self):
         path = UtilsConfig.get_stock_list_path(self.list_name)
@@ -288,7 +288,7 @@ class StocksIndustryInfo:
             return False
 
     def load_from_server(self):
-        info_list = BaoStock.query_stock_industry()
+        info_list = Stock.query_stock_industry()
         for line in info_list:
             info = StockIndustryInfo(*line)
             self.infolist[info.key] = info
@@ -411,7 +411,7 @@ class StockData:
             self.kd_list = StockData.parse_hex_kd(path, days, start_date, end_date)
             return True
         else:
-            print(self.code, 'Load kd error')
+            # print(self.code, 'Load kd error')
             return False
 
     def load_k5(self, days, start_date=0, end_date=999999):
@@ -420,7 +420,7 @@ class StockData:
             self.k5_list = StockData.parse_hex_k5(path, days, start_date, end_date)
             return True
         else:
-            print(self.code, 'Load k5 error')
+            # print(self.code, 'Load k5 error')
             return False
 
 
@@ -645,7 +645,7 @@ class StockUpdateRecord:
             date_record = datetime.datetime(int('20' + date_str[0:2]), int(date_str[2:4]), int(date_str[4:6]))
             if (date_now - date_record).days > 0:
                 file = open(path, 'ab')
-                kd_list = BaoStock.query_hist_kd(
+                kd_list = Stock.query_hist_kd(
                     self.code_name, start_date='20{}-{}-{}'.format(date_str[0:2], date_str[2:4], date_str[4:6]))
                 for item in kd_list:
                     kd = DataD(*item)
@@ -680,7 +680,7 @@ class StockUpdateRecord:
             date_record = datetime.datetime(int('20' + date_str[0:2]), int(date_str[2:4]), int(date_str[4:6]))
             if (date_now - date_record).days > 0:
                 file = open(path, 'ab')
-                k5_list = BaoStock.query_hist_k5(
+                k5_list = Stock.query_hist_k5(
                     self.code_name, start_date='20{}-{}-{}'.format(date_str[0:2], date_str[2:4], date_str[4:6]))
                 k5_list.sort(key=lambda i: int(i[0]))
                 for item in k5_list:
@@ -698,11 +698,11 @@ if __name__ == '__main__':
     ssi = StocksSuperiorInfo(stocks_type=StocksSuperiorInfo.TYPE_ZZ500)
     sbi = StocksBasicInfo()
     sii = StocksIndustryInfo()
-    BaoStock.login()
+    Stock.login()
     # ssi.load_from_server()
     # sbi.load_from_server()
     # sii.load_from_server()
-    BaoStock.logout()
+    Stock.logout()
     # sbi.save_to_file()
     # sbi.load_from_file()
     # sbi.dump()

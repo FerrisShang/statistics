@@ -1,5 +1,5 @@
 from utils_data import *
-from utils_baostock import BaoStock
+from utils_baostock import Stock
 import time
 
 
@@ -31,7 +31,7 @@ def update_record(code, update_kd, update_k5, i, item_num):
 
 
 def update_data(stock_code, update_kd=True, update_k5=True):
-    BaoStock.login()
+    Stock.login()
     sur = StockUpdateRecord(StockBasicInfo.code2bao(stock_code))
     if update_kd:
         sur.update_kd()
@@ -39,7 +39,7 @@ def update_data(stock_code, update_kd=True, update_k5=True):
     if update_k5:
         sur.update_k5()
         print(stock_code, 'Update k5 finished' + ' ' * 40)
-    BaoStock.logout()
+    Stock.logout()
 
 
 def update_all_data(update_kd=False, update_k5=False):
@@ -48,7 +48,7 @@ def update_all_data(update_kd=False, update_k5=False):
         return
     item_list = sbi.get_list()
     item_num = len(item_list)
-    BaoStock.login()
+    Stock.login()
     if True:
         for i in range(item_num):
             assert(isinstance(item_list[i], StockBasicInfo))
@@ -71,7 +71,7 @@ def update_all_data(update_kd=False, update_k5=False):
                     continue
                 executor.submit(update_record, item_list[i].code, update_kd, update_k5, i, item_num)
     print('\rUpdate finished.' + ' ' * 40)
-    BaoStock.logout()
+    Stock.logout()
 
 
 if __name__ == '__main__':

@@ -2,7 +2,7 @@ import baostock as bs
 from time import sleep
 
 
-class BaoStock:
+class Stock:
     retried_num = 0
     RETRY_MAX_NUM = 5
     RETRY_DELAY_S = 30
@@ -10,13 +10,13 @@ class BaoStock:
 
     @staticmethod
     def login():
-        BaoStock.lg = bs.login()
-        while BaoStock.retried_num < BaoStock.RETRY_MAX_NUM and BaoStock.lg.error_code != '0':
-            sleep(BaoStock.RETRY_DELAY_S)
-            BaoStock.lg = bs.login()
-            BaoStock.retried_num += 1
-        assert('0' == BaoStock.lg.error_code)
-        BaoStock.retried_num = 0
+        Stock.lg = bs.login()
+        while Stock.retried_num < Stock.RETRY_MAX_NUM and Stock.lg.error_code != '0':
+            sleep(Stock.RETRY_DELAY_S)
+            Stock.lg = bs.login()
+            Stock.retried_num += 1
+        assert('0' == Stock.lg.error_code)
+        Stock.retried_num = 0
 
     @staticmethod
     def logout():
@@ -24,27 +24,11 @@ class BaoStock:
 
     @staticmethod
     def subscribe_real_time(sub_code, sub_cb, param=None):
-        rs = bs.login_real_time()
-        while BaoStock.retried_num < BaoStock.RETRY_MAX_NUM and rs.error_code != '0':
-            sleep(BaoStock.RETRY_DELAY_S)
-            rs = bs.login_real_time()
-            BaoStock.retried_num += 1
-        assert('0' == rs.error_code)
-        BaoStock.retried_num = 0
-        BaoStock.subscribe_rs = bs.subscribe_by_code(sub_code, 0, sub_cb, param)
-        while BaoStock.retried_num < BaoStock.RETRY_MAX_NUM and BaoStock.subscribe_rs.error_code != '0':
-            sleep(BaoStock.RETRY_DELAY_S)
-            BaoStock.subscribe_rs = bs.subscribe_by_code(sub_code, 0, sub_cb, param)
-            BaoStock.retried_num += 1
-        assert('0' == BaoStock.subscribe_rs.error_code)
-        BaoStock.retried_num = 0
+        pass
 
     @staticmethod
     def unsubscribe_real_time():
-        if BaoStock.subscribe_rs is not None:
-            bs.cancel_subscribe(BaoStock.subscribe_rs.serial_id)
-            BaoStock.subscribe_rs = None
-        bs.logout_real_time()
+        pass
 
     @staticmethod
     def rs_to_list(result_data):
@@ -57,84 +41,84 @@ class BaoStock:
     def query_basic(code='', code_name=''):
         assert(isinstance(code, str))
         rs = bs.query_stock_basic(code, code_name)
-        while BaoStock.retried_num < BaoStock.RETRY_MAX_NUM and rs.error_code != '0':
-            sleep(BaoStock.RETRY_DELAY_S)
+        while Stock.retried_num < Stock.RETRY_MAX_NUM and rs.error_code != '0':
+            sleep(Stock.RETRY_DELAY_S)
             rs = bs.query_stock_basic(code, code_name)
-            BaoStock.retried_num += 1
+            Stock.retried_num += 1
         assert('0' == rs.error_code)
-        BaoStock.retried_num = 0
-        return BaoStock.rs_to_list(rs)
+        Stock.retried_num = 0
+        return Stock.rs_to_list(rs)
 
     @staticmethod
     def query_history_k_data(code, fields, start_date=None, end_date=None, frequency='d', adjust_flag='3'):
         rs = bs.query_history_k_data(code, fields, start_date, end_date, frequency, adjust_flag)
-        while BaoStock.retried_num < BaoStock.RETRY_MAX_NUM and rs.error_code != '0':
-            sleep(BaoStock.RETRY_DELAY_S)
+        while Stock.retried_num < Stock.RETRY_MAX_NUM and rs.error_code != '0':
+            sleep(Stock.RETRY_DELAY_S)
             bs.query_history_k_data(code, fields, start_date, end_date, frequency, adjust_flag)
-            BaoStock.retried_num += 1
+            Stock.retried_num += 1
         assert('0' == rs.error_code)
-        BaoStock.retried_num = 0
-        return BaoStock.rs_to_list(rs)
+        Stock.retried_num = 0
+        return Stock.rs_to_list(rs)
 
     @staticmethod
     def query_hist_kd(code, start_date=None, end_date=None):
         fields = 'date, open, close, high, low, volume, amount, adjustflag, turn, tradestatus, '
         fields += 'pctChg, peTTM, psTTM, pcfNcfTTM, pbMRQ, isST'
-        return BaoStock.query_history_k_data(code, fields, start_date, end_date, frequency='d')
+        return Stock.query_history_k_data(code, fields, start_date, end_date, frequency='d')
 
     @staticmethod
     def query_hist_k5(code, start_date=None, end_date=None):
         fields = 'time, open, close, high, low, volume, amount'
-        return BaoStock.query_history_k_data(code, fields, start_date, end_date, frequency='5')
+        return Stock.query_history_k_data(code, fields, start_date, end_date, frequency='5')
 
     @staticmethod
     def query_stock_industry(code='', date=''):
         rs = bs.query_stock_industry(code, date)
-        while BaoStock.retried_num < BaoStock.RETRY_MAX_NUM and rs.error_code != '0':
-            sleep(BaoStock.RETRY_DELAY_S)
+        while Stock.retried_num < Stock.RETRY_MAX_NUM and rs.error_code != '0':
+            sleep(Stock.RETRY_DELAY_S)
             rs = bs.query_stock_industry(code, date)
-            BaoStock.retried_num += 1
+            Stock.retried_num += 1
         assert('0' == rs.error_code)
-        BaoStock.retried_num = 0
-        return BaoStock.rs_to_list(rs)
+        Stock.retried_num = 0
+        return Stock.rs_to_list(rs)
 
     @staticmethod
     def query_hs300_stocks():
         rs = bs.query_hs300_stocks()
-        while BaoStock.retried_num < BaoStock.RETRY_MAX_NUM and rs.error_code != '0':
-            sleep(BaoStock.RETRY_DELAY_S)
+        while Stock.retried_num < Stock.RETRY_MAX_NUM and rs.error_code != '0':
+            sleep(Stock.RETRY_DELAY_S)
             rs = bs.query_hs300_stocks()
-            BaoStock.retried_num += 1
+            Stock.retried_num += 1
         assert('0' == rs.error_code)
-        BaoStock.retried_num = 0
-        return BaoStock.rs_to_list(rs)
+        Stock.retried_num = 0
+        return Stock.rs_to_list(rs)
 
     @staticmethod
     def query_sz50_stocks():
         rs = bs.query_sz50_stocks()
-        while BaoStock.retried_num < BaoStock.RETRY_MAX_NUM and rs.error_code != '0':
-            sleep(BaoStock.RETRY_DELAY_S)
+        while Stock.retried_num < Stock.RETRY_MAX_NUM and rs.error_code != '0':
+            sleep(Stock.RETRY_DELAY_S)
             rs = bs.query_sz50_stocks()
-            BaoStock.retried_num += 1
+            Stock.retried_num += 1
         assert('0' == rs.error_code)
-        BaoStock.retried_num = 0
-        return BaoStock.rs_to_list(rs)
+        Stock.retried_num = 0
+        return Stock.rs_to_list(rs)
 
     @staticmethod
     def query_zz500_stocks():
         rs = bs.query_zz500_stocks()
-        while BaoStock.retried_num < BaoStock.RETRY_MAX_NUM and rs.error_code != '0':
-            sleep(BaoStock.RETRY_DELAY_S)
+        while Stock.retried_num < Stock.RETRY_MAX_NUM and rs.error_code != '0':
+            sleep(Stock.RETRY_DELAY_S)
             rs = bs.query_zz500_stocks()
-            BaoStock.retried_num += 1
+            Stock.retried_num += 1
         assert('0' == rs.error_code)
-        BaoStock.retried_num = 0
-        return BaoStock.rs_to_list(rs)
+        Stock.retried_num = 0
+        return Stock.rs_to_list(rs)
 
 if __name__ == '__main__':
-    BaoStock.login()
-    for x in BaoStock.query_hist_kd('sh.600000', '2018-10-01'):
+    Stock.login()
+    for x in Stock.query_hist_kd('sh.600000', '2018-10-01'):
         print(x)
-    for x in BaoStock.query_stock_industry():
+    for x in Stock.query_stock_industry():
         print(x)
-    BaoStock.logout()
+    Stock.logout()

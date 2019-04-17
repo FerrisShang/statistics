@@ -1,5 +1,5 @@
 from utils_data import *
-from utils_baostock import BaoStock
+from utils_baostock import Stock
 
 
 __all__ = [
@@ -14,7 +14,7 @@ def update_all_info():
     ssi_hz300 = StocksSuperiorInfo(stocks_type=StocksSuperiorInfo.TYPE_HZ300)
     ssi_zz500 = StocksSuperiorInfo(stocks_type=StocksSuperiorInfo.TYPE_ZZ500)
     # load data from server
-    BaoStock.login()
+    Stock.login()
     print('Loading all info from server.')
     sbi.load_from_server()
     sii.load_from_server()
@@ -22,7 +22,7 @@ def update_all_info():
     ssi_hz300.load_from_server()
     ssi_zz500.load_from_server()
     print('All info download success.   ')
-    BaoStock.logout()
+    Stock.logout()
     # save data to local
     sbi.save_to_file('stock_all.list')
     sii.save_to_file()
