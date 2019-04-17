@@ -1,5 +1,4 @@
 from utils_data import *
-from utils_baostock import Stock
 import time
 
 

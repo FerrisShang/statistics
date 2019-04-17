@@ -8,10 +8,11 @@ from collections import OrderedDict
 from utils_config import UtilsConfig
 from enum import IntEnum
 from struct import pack, unpack
-from utils_baostock import *
 from copy import deepcopy
 from threading import Thread
 from pinyin import *
+from utils_tushare import *
+# from utils_baostock import *
 try:
     import sys
     reload(sys)
@@ -36,6 +37,7 @@ __all__ = [
     'StockRtData',
     'StockUpdateRecord',
     'get_weekday',
+    'Stock',
 ]
 
 
