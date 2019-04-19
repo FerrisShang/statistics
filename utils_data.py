@@ -1,7 +1,10 @@
 # -*- coding:utf-8 -*-
 import os
+import re
+import json
 import datetime
 import requests
+import random
 import time
 import csv
 from collections import OrderedDict
@@ -11,8 +14,8 @@ from struct import pack, unpack
 from copy import deepcopy
 from threading import Thread
 from pinyin import *
-from utils_tushare import *
-# from utils_baostock import *
+# from utils_tushare import *
+from utils_baostock import *
 try:
     import sys
     reload(sys)
@@ -562,6 +565,32 @@ class StockRtData:
                     )
                 except IndexError:
                     pass
+        except:
+            pass
+        finally:
+            return res
+
+    @staticmethod
+    def get_recent_k5(code, start=0, end=2111111111):
+        KLINE_TT_MIN_URL = 'http://ifzq.gtimg.cn/appstock/app/kline/mkline?param=%s,m5,,640&_var=m5_today&r=0.%s'
+        r = str(random.randint(10**(16-1), (10**16)-1))
+        res = []
+        try:
+            symbol = StockBasicInfo.code2sina(code)
+            r = requests.get(KLINE_TT_MIN_URL % (symbol, r))
+            ret = r.content.decode(encoding='utf-8')
+            lines = ret.split('=')[1]
+            reg = re.compile(r',{"nd.*?}')
+            lines = re.subn(reg, '', lines)
+            js = json.loads(lines[0])
+            dataflag = 'm5'
+            if len(js['data'][symbol][dataflag][0]) >= 6:
+                data = js['data'][symbol][dataflag]
+                for d in data:
+                    if start <= int(d[0][2:12]) <= end:
+                        res.append(Data5(*d[:5], float(d[5])*100, 0))
+            else:
+                return None
         except:
             pass
         finally:
