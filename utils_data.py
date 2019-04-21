@@ -14,6 +14,7 @@ from struct import pack, unpack
 from copy import deepcopy
 from threading import Thread
 from pinyin import *
+from time import sleep, strftime
 # from utils_tushare import *
 from utils_baostock import *
 try:
@@ -428,6 +429,47 @@ class StockData:
             # print(self.code, 'Load k5 error')
             return False
 
+    @staticmethod
+    def check_update_failed(filename='stock_update.list'):
+        sbi = StocksBasicInfo()
+        sbi.load_from_file(filename)
+        update_list = []
+        for s in sbi.get_list():
+            assert(isinstance(s, StockBasicInfo))
+            sd = StockData(s.code, 1, 1)
+            update_list.append((
+                sd.code,
+                sd.kd_list[-1].date_num if len(sd.kd_list) > 0 else 0,
+                999999 if s.type == StockType.INDEX else sd.k5_list[-1][-1].date_num if len(sd.k5_list) > 0 else 0,
+                s.code_name, s.type
+            ))
+        if len(update_list) > 0:
+            thrust_date_str = str(datetime.datetime.today().date() + datetime.timedelta(-90))
+            thrust_date = int(thrust_date_str[2:4]+thrust_date_str[5:7]+thrust_date_str[8:10])
+            kd_max_date = max([i[1] for i in update_list])
+            k5_max_date = max([i[2] for i in update_list if i[4] == StockType.STOCK])
+            print(kd_max_date, k5_max_date, thrust_date, int(strftime('%Y%m%d')[2:]), )
+            k5_m, kd_m, both_m = (0, 0, 0)
+            for item in update_list:
+                if item[1] < thrust_date and item[2] < thrust_date:
+                    both_m += 1
+                    print('Both miss: {} {} {} {}'.format(item[0], item[3], item[1], item[2]))
+                elif item[1] < thrust_date:
+                    print('Kd miss: {} {} {} {}'.format(item[0], item[3], item[1], item[2]))
+                    kd_m += 1
+                elif item[2] < thrust_date:
+                    print('K5 miss: {} {} {} {}'.format(item[0], item[3], item[1], item[2]))
+                    k5_m += 1
+                else:
+                    if item[1] < kd_max_date:
+                        print('Warning(Kd short): {} {} {} {}'.format(item[0], item[3], item[1], item[2]))
+                    elif item[2] < k5_max_date:
+                        print('Warning(K5 short): {} {} {} {}'.format(item[0], item[3], item[1], item[2]))
+                    continue
+                sbi.remove(item[0])
+            print('kd miss: {}, k5 miss: {}, both miss: {}'.format(kd_m, k5_m, both_m))
+            sbi.save_to_file('stock_new.list')
+
 
 class Data5:
     FMT_HEX = '<LffffLf'
@@ -634,6 +676,8 @@ class StockRtData:
 
     @staticmethod
     def to_csv(stock_list, callback=None, param=None, interval=10, measure_time=(5, 30, 0),):
+        if len(stock_list) == 0:
+            return
         stock_list = [StockBasicInfo.code2sina(s) for s in stock_list]
         cw = {}
 
