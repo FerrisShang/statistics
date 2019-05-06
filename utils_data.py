@@ -589,28 +589,28 @@ class StockRtData:
     @staticmethod
     def get(stocks_list):
         res = []
-        try:
-            r = requests.get('http://hq.sinajs.cn/?list={}'.format(','.join(stocks_list)))
-            ret = r.content.decode(encoding='gbk')
-            for line in ret.strip().split('\n'):
-                try:
-                    context = line.split('"')
-                    p = context[1].split(',')
-                    res.append(
-                        DataRt(
-                            date=p[30][2:4] + p[30][5:7] + p[30][8:10],
-                            time=p[31][0:2] + p[31][3:5] + p[31][6:8],
-                            code=context[0][-7:-1], new=p[3], high=p[4], low=p[5], volume=p[8], amount=p[9],
-                            b1v=p[11], b1n=p[10], b2v=p[13], b2n=p[12], b3v=p[15], b3n=p[14], b4v=p[17], b4n=p[16], b5v=p[19], b5n=p[18],
-                            s1v=p[21], s1n=p[20], s2v=p[23], s2n=p[22], s3v=p[25], s3n=p[24], s4v=p[27], s4n=p[26], s5v=p[29], s5n=p[28],
+        for i in range(0, len(stocks_list), 256):
+            try:
+                r = requests.get('http://hq.sinajs.cn/?list={}'.format(','.join(stocks_list[i:min(len(stocks_list), i+256)])))
+                ret = r.content.decode(encoding='gbk')
+                for line in ret.strip().split('\n'):
+                    try:
+                        context = line.split('"')
+                        p = context[1].split(',')
+                        res.append(
+                            DataRt(
+                                date=p[30][2:4] + p[30][5:7] + p[30][8:10],
+                                time=p[31][0:2] + p[31][3:5] + p[31][6:8],
+                                code=context[0][-7:-1], new=p[3], high=p[4], low=p[5], volume=p[8], amount=p[9],
+                                b1v=p[11], b1n=p[10], b2v=p[13], b2n=p[12], b3v=p[15], b3n=p[14], b4v=p[17], b4n=p[16], b5v=p[19], b5n=p[18],
+                                s1v=p[21], s1n=p[20], s2v=p[23], s2n=p[22], s3v=p[25], s3n=p[24], s4v=p[27], s4n=p[26], s5v=p[29], s5n=p[28],
+                            )
                         )
-                    )
-                except IndexError:
-                    pass
-        except:
-            pass
-        finally:
-            return res
+                    except IndexError:
+                        pass
+            except:
+                pass
+        return res
 
     @staticmethod
     def get_recent_k5(code, start=0, end=2111111111):
