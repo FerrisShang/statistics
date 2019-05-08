@@ -4,8 +4,9 @@ from time import sleep
 
 class Stock:
     retried_num = 0
-    RETRY_MAX_NUM = 5
-    RETRY_DELAY_S = 30
+    RETRY_MAX_NUM = 3
+    RETRY_DELAY_S = 10
+    is_login = False
     subscribe_rs = None
 
     @staticmethod
@@ -15,12 +16,14 @@ class Stock:
             sleep(Stock.RETRY_DELAY_S)
             Stock.lg = bs.login()
             Stock.retried_num += 1
-        assert('0' == Stock.lg.error_code)
-        Stock.retried_num = 0
+        if '0' == Stock.lg.error_code:
+            Stock.is_login = True
+            Stock.retried_num = 0
 
     @staticmethod
     def logout():
         bs.logout()
+        Stock.is_login = False
 
     @staticmethod
     def subscribe_real_time(sub_code, sub_cb, param=None):
@@ -45,9 +48,9 @@ class Stock:
             sleep(Stock.RETRY_DELAY_S)
             rs = bs.query_stock_basic(code, code_name)
             Stock.retried_num += 1
-        assert('0' == rs.error_code)
-        Stock.retried_num = 0
-        return Stock.rs_to_list(rs)
+        if '0' == rs.error_code:
+            Stock.retried_num = 0
+            return Stock.rs_to_list(rs)
 
     @staticmethod
     def query_history_k_data(code, fields, start_date=None, end_date=None, frequency='d', adjust_flag='3'):
@@ -56,9 +59,9 @@ class Stock:
             sleep(Stock.RETRY_DELAY_S)
             bs.query_history_k_data(code, fields, start_date, end_date, frequency, adjust_flag)
             Stock.retried_num += 1
-        assert('0' == rs.error_code)
-        Stock.retried_num = 0
-        return Stock.rs_to_list(rs)
+        if '0' == rs.error_code:
+            Stock.retried_num = 0
+            return Stock.rs_to_list(rs)
 
     @staticmethod
     def query_hist_kd(code, start_date=None, end_date=None):
@@ -78,9 +81,9 @@ class Stock:
             sleep(Stock.RETRY_DELAY_S)
             rs = bs.query_stock_industry(code, date)
             Stock.retried_num += 1
-        assert('0' == rs.error_code)
-        Stock.retried_num = 0
-        return Stock.rs_to_list(rs)
+        if '0' == rs.error_code:
+            Stock.retried_num = 0
+            return Stock.rs_to_list(rs)
 
     @staticmethod
     def query_hs300_stocks():
@@ -89,9 +92,9 @@ class Stock:
             sleep(Stock.RETRY_DELAY_S)
             rs = bs.query_hs300_stocks()
             Stock.retried_num += 1
-        assert('0' == rs.error_code)
-        Stock.retried_num = 0
-        return Stock.rs_to_list(rs)
+        if '0' == rs.error_code:
+            Stock.retried_num = 0
+            return Stock.rs_to_list(rs)
 
     @staticmethod
     def query_sz50_stocks():
@@ -100,9 +103,9 @@ class Stock:
             sleep(Stock.RETRY_DELAY_S)
             rs = bs.query_sz50_stocks()
             Stock.retried_num += 1
-        assert('0' == rs.error_code)
-        Stock.retried_num = 0
-        return Stock.rs_to_list(rs)
+        if '0' == rs.error_code:
+            Stock.retried_num = 0
+            return Stock.rs_to_list(rs)
 
     @staticmethod
     def query_zz500_stocks():
@@ -111,9 +114,9 @@ class Stock:
             sleep(Stock.RETRY_DELAY_S)
             rs = bs.query_zz500_stocks()
             Stock.retried_num += 1
-        assert('0' == rs.error_code)
-        Stock.retried_num = 0
-        return Stock.rs_to_list(rs)
+        if '0' == rs.error_code:
+            Stock.retried_num = 0
+            return Stock.rs_to_list(rs)
 
 if __name__ == '__main__':
     Stock.login()

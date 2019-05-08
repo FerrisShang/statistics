@@ -639,6 +639,25 @@ class StockRtData:
             return res
 
     @staticmethod
+    def get_recent_all_nmc():
+        url = 'http://vip.stock.finance.sina.com.cn/quotes_service/api/json_v2.php/Market_Center.getHQNodeData?num=80&sort=nmc&asc=0&node=hs_a&symbol=&_s_r_a=page&page=%d'
+        res = {}
+        for i in range(50):
+            try:
+                r = requests.get(url%i)
+                ret = r.content.decode(encoding='gbk')
+                if len(ret) < 128:
+                    break
+                reg = re.compile(r'\,(.*?)\:')
+                text = reg.sub(r',"\1":', ret).replace('"{symbol', '{"symbol').replace('{symbol', '{"symbol"')
+                js = json.loads(text)
+                for j in js:
+                    res[int(j['code'])] = round(j['nmc'] / 10000)
+            except:
+                pass
+        return res
+
+    @staticmethod
     def subscribe(sub_list, sub_cb, interval=10, measure_time=(5, 30, 0), param=None):
         assert(isinstance(sub_list, list))
         assert(sub_cb is not None)
