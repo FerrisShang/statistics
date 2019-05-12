@@ -15,19 +15,15 @@ from copy import deepcopy
 from threading import Thread
 from pinyin import *
 from time import sleep, strftime
+import pickle
 # from utils_tushare import *
 from utils_baostock import *
-try:
-    import sys
-    reload(sys)
-    sys.setdefaultencoding('utf-8')
-except:
-    pass
 
 __all__ = [
     'Data5',
     'DataD',
     'DataRt',
+    'DataReport',
     'StockType',
     'StockStatus',
     'StockTradeStatus',
@@ -41,7 +37,9 @@ __all__ = [
     'StockRtData',
     'StockUpdateRecord',
     'get_weekday',
+    'html_get_tables',
     'Stock',
+    'EnvParam',
 ]
 
 
@@ -52,6 +50,33 @@ def get_weekday(date):
     else:
         date = datetime.datetime(date//10000 % 100, date//100 % 100, date % 100)
     return date.weekday(), week_str[date.weekday()]
+
+
+def html_get_tables(html_text):
+    tables = []
+    tbs = re.compile(r'<table.*?>.*?</table>', re.DOTALL).findall(html_text)
+    for tb in tbs:
+        trs = re.compile(r'<tr.*?>.*?</tr>', re.DOTALL).findall(tb)
+        table = []
+        for tr in trs:
+            tds = re.compile(r'<td.*?>.*?</td>', re.DOTALL).findall(tr)
+            in_mark = False
+            line = []
+            for td in tds:
+                td_str = ''
+                for c in td:
+                    if c == '<':
+                        in_mark = True
+                    elif c == '>':
+                        in_mark = False
+                    else:
+                        if not in_mark:
+                            td_str += c
+                line.append(td_str)
+            table.append(line)
+        if len(table) > 0:
+            tables.append(table)
+    return tables
 
 
 class StockType(IntEnum):
@@ -564,6 +589,43 @@ class DataRt:
             # format(self.date, self.time, self.code, self.new, self.b1v, self.b1n, self.s1v, self.s1n)
 
 
+class DataReport:
+    header = '股票代码  每股收益(元)  每股收益同比(%)  每股净资产(元)  净资产收益率(%)  每股现金流量(元)  净利润(万元)  净利润同比(%)  分配方案'
+    def __init__(self, code, eps, epsyoy, naps, roe, cfps, np, npyoy, dp):
+        """
+        :param code: 股票代码
+        :param eps: 每股收益(元)
+        :param epsyoy: 每股收益同比(%)
+        :param naps: 每股净资产(元)
+        :param roe: 净资产收益率(%)
+        :param cfps: 每股现金流量(元)
+        :param np: 净利润(万元)
+        :param npyoy: 净利润同比(%)
+        :param dp: 分配方案
+        """
+        ps = 'eps', 'epsyoy', 'naps', 'roe', 'cfps', 'np', 'npyoy'
+        try: self.code = int(code)
+        except: self.code = 0
+        for p in ps:
+            try:
+                exec('self.{} = float({})'.format(p, p))
+            except:
+                exec('self.{} = None'.format(p, p))
+        self.dp = dp
+
+    def __str__(self):
+        return '{}      {}       {}      {}       {}      {}    {}    {}    {}'.format(
+            ('%06d' % self.code),
+            ('  None' if self.eps is None else '%6.2f' % self.eps),
+            ('    None' if self.epsyoy is None else '%8.2f' % self.epsyoy),
+            ('    None' if self.naps is None else '%8.2f' % self.naps),
+            ('    None' if self.roe is None else '%8.2f' % self.roe),
+            ('    None' if self.cfps is None else '%8.2f' % self.cfps),
+            ('        None' if self.np is None else '%12.2f' % self.np),
+            ('     None' if self.npyoy is None else '%9.2f' % self.npyoy),
+            self.dp
+        )
+
 class StockRtData:
     ST_UNSUBCRIBE = 0
     ST_SUBCRIBED = 1
@@ -654,6 +716,61 @@ class StockRtData:
                 for j in js:
                     res[int(j['code'])] = round(j['nmc'] / 10000)
             except:
+                pass
+        return res
+
+
+    @staticmethod
+    def get_report_data(year, quarter, retry_count=3):
+        def check_header(h):
+            name_list = ['股票代码', '股票名称', '每股收益', '每股收益同比', '每股净资产(元)', '净资产收益率(%)',
+                         '每股现金流量(元)', '净利润(万元)', '净利润同比(%)', '分配方案', '发布日期', '详细']
+            if len(h) == len(name_list) and min([ name in item for name, item in zip(name_list, h) ]):
+                return True
+        url = 'http://vip.stock.finance.sina.com.cn/q/go.php/vFinanceAnalyze/kind/mainindex/index.phtml?s_i=&s_a=&s_c=&reportdate=%d&quarter=%d&num=10000'
+        res = {}
+        for _ in range(retry_count):
+            time.sleep(0.01)
+            try:
+                r = requests.get(url%(year, quarter))
+                html_text = r.content.decode(encoding='gbk')
+                if len(html_text) < 512:
+                    break
+                tables = html_get_tables(html_text)
+                if len(tables) != 1 or len(tables[0]) < 2 or not check_header(tables[0][0]):
+                    return None
+                for line in tables[0][1:]:
+                    try:
+                        res[int(line[0])] = DataReport(line[0], *line[2:10])
+                    except:
+                        pass
+                break
+            except Exception as e:
+                pass
+        return res
+
+
+    @staticmethod
+    def get_report_data_detail(code, retry_count=3):
+        url = 'http://vip.stock.finance.sina.com.cn/corp/go.php/vFD_ProfitStatement/stockid/%06d/ctrl/part/displaytype/1000.phtml'
+        res = {}
+        for _ in range(retry_count):
+            time.sleep(0.01)
+            try:
+                r = requests.get(url % (int(code)))
+                html_text = r.content.decode(encoding='gbk')
+                if len(html_text) < 512:
+                    break
+                tables = html_get_tables(html_text)
+                if len(tables) == 0:
+                    return None
+                for table in tables:
+                    if len(table) != 32 or (not isinstance(table[1], list) or len(table[1]) != 6 or table[1][0] != '报表日期'):
+                        continue
+                    print(len(table), table)
+                    #TODO: list to custom data type
+                break
+            except Exception as e:
                 pass
         return res
 
@@ -786,6 +903,42 @@ class StockUpdateRecord:
                 file.close()
         else:
             print('Get path failed.')
+
+
+class EnvParam:
+    def __init__(self, file_name='env.db'):
+        self.env = {}
+        self.file_name = file_name
+        self.load()
+
+    def load(self):
+        try:
+            with open(self.file_name, 'rb') as f:
+                self.env = pickle.load(f)
+        except:
+            self.env = {}
+        return self
+
+    def save(self):
+        with open(self.file_name, 'wb') as f:
+            pickle.dump(self.env, f)
+        return self
+
+    def get(self, param_name='default'):
+        return self.env[param_name] if param_name in self.env else None
+
+    def put(self, param, param_name='default'):
+        self.env[param_name] = param
+        return self
+
+    def delete(self, param_name='default'):
+        if param_name in self.env:
+            del(self.env[param_name])
+        return self
+
+    def clear(self):
+        self.env = {}
+        return self
 
 
 if __name__ == '__main__':
