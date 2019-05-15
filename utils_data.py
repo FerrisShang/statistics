@@ -358,15 +358,25 @@ class StockData:
 
     def __init__(self, code, load_kd=0, load_k5=0, sync=False, start_date=0, end_date=999999):
         assert(isinstance(code, str))
+        assert(not sync)
         self.code = code
         self.kd_list = []
         self.k5_list = []
         self.sync = sync
         self.sync_len = 0
+        load_kd = load_k5 = max(load_k5, load_kd)
+        close_set = set()
         if load_kd > 0:
             self.load_kd(load_kd, start_date, end_date)
+            for i in range(len(self.kd_list) - 1, -1, -1):
+                if self.kd_list[i].trade_status != StockTradeStatus.ON:
+                    close_set.add(self.kd_list[i].date_num)
+                    del(self.kd_list[i])
         if load_k5 > 0:
             self.load_k5(load_k5, start_date, end_date)
+            for i in range(len(self.k5_list) - 1, -1, -1):
+                if self.k5_list[i][0].date_num in close_set or self.k5_list[i][0].open < 0.1:
+                    del(self.k5_list[i])
         if sync:
             if len(self.kd_list) <= 1 or len(self.k5_list) == 0 or \
                     (self.kd_list[-1].date_num != self.k5_list[-1][0].date_num and
@@ -590,8 +600,8 @@ class DataRt:
 
 
 class DataReport:
-    header = '股票代码  每股收益(元)  每股收益同比(%)  每股净资产(元)  净资产收益率(%)  每股现金流量(元)  净利润(万元)  净利润同比(%)  分配方案'
-    def __init__(self, code, eps, epsyoy, naps, roe, cfps, np, npyoy, dp):
+    header = '股票代码  每股收益(元)  每股收益同比(%)  每股净资产(元)  净资产收益率(%)  每股现金流量(元)  净利润(万元)  净利润同比(%)  发布日期  分配方案'
+    def __init__(self, code, eps, epsyoy, naps, roe, cfps, np, npyoy, dp, date, year, quarter):
         """
         :param code: 股票代码
         :param eps: 每股收益(元)
@@ -611,10 +621,18 @@ class DataReport:
                 exec('self.{} = float({})'.format(p, p))
             except:
                 exec('self.{} = None'.format(p, p))
-        self.dp = dp
+        try:
+            self.dp = dp
+        except:
+            self.dp = None
+        try:
+            m, d = map(int, date.split('-'))
+            self.date = ((year % 100) + (1 if quarter == 4 and m < 6 else 0)) * 10000 + m * 100 + d
+        except:
+            self.date = None
 
     def __str__(self):
-        return '{}      {}       {}      {}       {}      {}    {}    {}    {}'.format(
+        return '{}      {}       {}      {}       {}      {}    {}    {}   {}    {}'.format(
             ('%06d' % self.code),
             ('  None' if self.eps is None else '%6.2f' % self.eps),
             ('    None' if self.epsyoy is None else '%8.2f' % self.epsyoy),
@@ -623,6 +641,7 @@ class DataReport:
             ('    None' if self.cfps is None else '%8.2f' % self.cfps),
             ('        None' if self.np is None else '%12.2f' % self.np),
             ('     None' if self.npyoy is None else '%9.2f' % self.npyoy),
+            ('    None' if self.date is None else '%04d' % self.date),
             self.dp
         )
 
@@ -741,7 +760,7 @@ class StockRtData:
                     return None
                 for line in tables[0][1:]:
                     try:
-                        res[int(line[0])] = DataReport(line[0], *line[2:10])
+                        res[int(line[0])] = DataReport(line[0], *line[2:11], year, quarter)
                     except:
                         pass
                 break
