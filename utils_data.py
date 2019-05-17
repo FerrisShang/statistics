@@ -40,6 +40,7 @@ __all__ = [
     'html_get_tables',
     'Stock',
     'EnvParam',
+    'Date',
 ]
 
 
@@ -960,21 +961,30 @@ class EnvParam:
         return self
 
 
+class Date:
+    @staticmethod
+    def get_now():
+        return int(time.strftime('%Y%m%d')[-6:])
+
+    @staticmethod
+    def get_day(now=None, diff=0):
+        if now is None:
+            date = Date.get_now()
+        elif isinstance(now, str):
+            date = datetime.datetime(int(now[:2]), int(now[2:4]), int(now[4:6]))
+        else:
+            date = datetime.datetime(2000+now//10000, (now//100)%100, now%100)
+        date += datetime.timedelta(diff)
+        return int(date.strftime('%Y%m%d')[-6:])
+
+    @staticmethod
+    def get_diff(s, e):
+        s = datetime.datetime(2000+s//10000, (s//100)%100, s%100)
+        e = datetime.datetime(2000+e//10000, (e//100)%100, e%100)
+        delta = e - s
+        return delta.days
+
+
 if __name__ == '__main__':
-    ssi = StocksSuperiorInfo(stocks_type=StocksSuperiorInfo.TYPE_ZZ500)
-    sbi = StocksBasicInfo()
-    sii = StocksIndustryInfo()
-    Stock.login()
-    # ssi.load_from_server()
-    # sbi.load_from_server()
-    # sii.load_from_server()
-    Stock.logout()
-    # sbi.save_to_file()
-    # sbi.load_from_file()
-    # sbi.dump()
-    # ssi.save_to_file()
-    # ssi.load_from_file()
-    # ssi.dump()
-    # sii.save_to_file()
-    sii.load_from_file()
-    sii.dump()
+    date = Date.get_diff(190505, 190431)
+    print(date)

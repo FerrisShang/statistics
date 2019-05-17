@@ -1,9 +1,12 @@
 from utils_data import *
+from utils_config import UtilsConfig
 from utils_baostock import Stock
 
 
 __all__ = [
-    'update_all_info'
+    'update_all_info',
+    'update_recent_nmc',
+    'update_report'
 ]
 
 
@@ -54,5 +57,36 @@ def ind_to_info(info_ind, ind, info_all):
             print('key {} not in stock list')
 
 
+def update_recent_nmc(file_name='v_nmc.db'):
+    path = UtilsConfig.get_stock_list_path(file_name)
+    if path is None:
+        return
+    nmc = StockRtData.get_recent_all_nmc()
+    EnvParam(path).put(nmc).save()
+
+
+def update_report(file_name='v_report.db'):
+    path = UtilsConfig.get_stock_list_path(file_name)
+    if path is None:
+        return
+    env = EnvParam(path)
+    report = env.get()
+    report = {} if report is None else report
+    last_rec = None
+    for y in range(2010, 2099):
+        for q in range(1, 5):
+            if (y, q) not in report:
+                req = StockRtData.get_report_data(y, q)
+                if req is None or len(req) == 0:
+                    if last_rec is not None:
+                        req = StockRtData.get_report_data(*last_rec)
+                        report[last_rec] = req
+                    env.put(report).save()
+                    return
+                report[(y, q)] = req
+                last_rec = (y, q)
+
+
 if __name__ == '__main__':
-    update_all_info()
+    update_report()
+    update_recent_nmc()
