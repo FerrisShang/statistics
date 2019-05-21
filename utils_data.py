@@ -721,6 +721,40 @@ class StockRtData:
             return res
 
     @staticmethod
+    def get_ndrr(code):
+        try:
+            code = code if isinstance(code, int) else int(code[-6:])
+            url = 'http://hq.stock.sohu.com/cn/%03d/cn_%06d-1.html'
+            r = requests.get(url % (code % 1000, code))
+            html_text = r.content.decode(encoding='gbk')
+            data = re.compile(r'\[\'cn_{:06d}.*?\'\]'.format(code), re.DOTALL).findall(html_text)[0]
+            data = data.replace("'", "")[1:-1].split(',')
+            return data[1], float(data[2])
+        except:
+            return None
+
+    @staticmethod
+    def get_all_ndrr(type='sz'):
+        sz_codes = [
+            131810, 131811, 131800, 131809, 131801, 131802, 131803, 131805, 131806,
+        ]
+        sh_codes = [
+            204001, 204002, 204003, 204004, 204007, 204014, 204028, 204091, 204182,
+        ]
+        if type == 'sz':
+            codes = sz_codes
+        elif type == 'sh':
+            codes = sh_codes
+        else:
+            codes = sz_codes + sh_codes
+        result = []
+        for code in codes:
+            r = StockRtData.get_ndrr(code)
+            if r is not None:
+                result.append(r)
+        return result
+
+    @staticmethod
     def get_recent_all_nmc():
         url = 'http://vip.stock.finance.sina.com.cn/quotes_service/api/json_v2.php/Market_Center.getHQNodeData?num=80&sort=nmc&asc=0&node=hs_a&symbol=&_s_r_a=page&page=%d'
         res = {}
@@ -986,5 +1020,6 @@ class Date:
 
 
 if __name__ == '__main__':
-    date = Date.get_diff(190505, 190431)
-    print(date)
+    res = StockRtData.get_all_ndrr('all')
+    for r in res:
+        print(r)
