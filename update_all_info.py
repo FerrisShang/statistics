@@ -87,6 +87,24 @@ def update_report(file_name='v_report.db'):
                 last_rec = (y, q)
 
 
+def update_up_list(file_name='stock_update.list', nmc_name='v_nmc.db'):
+    nmc_path = UtilsConfig.get_stock_list_path(nmc_name)
+    nmc = EnvParam(nmc_path).get()
+    nmc = [(k, v) for k, v in nmc.items()]
+    if isinstance(nmc, list):
+        nmc.sort(key=lambda x: x[1])
+        sbi = StocksBasicInfo()
+        sbi_rec = StocksBasicInfo()
+        sbi.load_from_file('stock_all.list')
+        for n in nmc[:1000]:
+            if n[0] in sbi.get_dict():
+                sbi_rec.add_instance(sbi.get_dict()[n[0]])
+        if len(sbi_rec.get_list()) > 0:
+            sbi_rec.save_to_file(file_name)
+
+
 if __name__ == '__main__':
+    update_all_info()
     update_report()
     update_recent_nmc()
+    update_up_list()

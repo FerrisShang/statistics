@@ -577,10 +577,11 @@ class DataRt:
     FMT_RT_HEX = '<LLLfffLfLfLfLfLfLfLfLfLfLfLf'
     RT_HEX_LEN = 4*28
 
-    def __init__(self, date, time, code, new, high, low, volume, amount,
+    def __init__(self, date, time, code, open, pre_close, new, high, low, volume, amount,
                  b1v, b1n, b2v, b2n, b3v, b3n, b4v, b4n, b5v, b5n,
                  s1v, s1n, s2v, s2n, s3v, s3n, s4v, s4n, s5v, s5n):
             self.date, self.time = int(date), int(time)
+            self.open, self.pre_close = float(open), float(pre_close)
             self.high, self.low = float(high), float(low)
             self.code, self.new = int(code), float(new)
             self.volume, self.amount = int(volume), float(amount)
@@ -683,6 +684,7 @@ class StockRtData:
                             DataRt(
                                 date=p[30][2:4] + p[30][5:7] + p[30][8:10],
                                 time=p[31][0:2] + p[31][3:5] + p[31][6:8],
+                                open=p[1], pre_close=p[2],
                                 code=context[0][-7:-1], new=p[3], high=p[4], low=p[5], volume=p[8], amount=p[9],
                                 b1v=p[11], b1n=p[10], b2v=p[13], b2n=p[12], b3v=p[15], b3n=p[14], b4v=p[17], b4n=p[16], b5v=p[19], b5n=p[18],
                                 s1v=p[21], s1n=p[20], s2v=p[23], s2n=p[22], s3v=p[25], s3n=p[24], s4v=p[27], s4n=p[26], s5v=p[29], s5n=p[28],
@@ -947,6 +949,8 @@ class StockUpdateRecord:
                 file = open(path, 'ab')
                 k5_list = Stock.query_hist_k5(
                     self.code_name, start_date='20{}-{}-{}'.format(date_str[0:2], date_str[2:4], date_str[4:6]))
+                if isinstance(k5_list, list):
+                    k5_list.sort(key=lambda i: int(i[0]))
                 k5_list.sort(key=lambda i: int(i[0]))
                 for item in k5_list:
                     k5 = Data5(*item)
@@ -1003,8 +1007,8 @@ class Date:
     @staticmethod
     def get_day(now=None, diff=0):
         if now is None:
-            date = Date.get_now()
-        elif isinstance(now, str):
+            now = Date.get_now()
+        if isinstance(now, str):
             date = datetime.datetime(int(now[:2]), int(now[2:4]), int(now[4:6]))
         else:
             date = datetime.datetime(2000+now//10000, (now//100)%100, now%100)
