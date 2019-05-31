@@ -35,6 +35,7 @@ __all__ = [
     'StocksIndustryInfo',
     'StockData',
     'StockRtData',
+    'DataKzz',
     'StockUpdateRecord',
     'get_weekday',
     'html_get_tables',
@@ -647,6 +648,36 @@ class DataReport:
             self.dp
         )
 
+
+class DataKzz:
+    header = '债券代码  申购代码  正股代码  正股价  转股价  债现价   发行总量 发行时间  上市时间  债券简称'
+
+    def __init__(self, BONDCODE, SNAME, MEMO, CORRESCODE, SWAPSCODE, ZGJ, SWAPPRICE, ZQNEW, AISSUEVOL, STARTDATE, LISTDATE):
+
+        (self.BONDCODE, self.SNAME, self.MEMO, self.CORRESCODE, self.SWAPSCODE, self.ZGJ, self.SWAPPRICE, self.ZQNEW, self.AISSUEVOL, self.STARTDATE, self.LISTDATE) = \
+            0, '', '', 0, 0, -1, -1, -1, -1, -1, -1
+        try:
+            self.SNAME = SNAME
+            self.MEMO = MEMO
+            self.BONDCODE = int(BONDCODE)
+            self.CORRESCODE = int(CORRESCODE)
+            self.SWAPSCODE = int(SWAPSCODE)
+            self.STARTDATE = int(STARTDATE[2:4] + STARTDATE[5:7] + STARTDATE[8:10])
+            self.LISTDATE = int(LISTDATE[2:4] + LISTDATE[5:7] + LISTDATE[8:10])
+            self.SWAPPRICE = float(SWAPPRICE)
+            self.ZGJ = float(ZGJ)
+            self.ZQNEW = float(ZQNEW)
+            self.AISSUEVOL = float(AISSUEVOL)
+        except Exception as e:
+            pass
+
+    def __str__(self):
+        return '{:06d}   {:06d}   {:06d}  {:6.2f} {:6.2f}  {:6.2f}  {:6.2f}  {:06d}   {:06d}   {}' \
+            .format(
+                # self.BONDCODE, self.CORRESCODE, self.SWAPSCODE, self.ZGJ, self.SWAPPRICE, self.STARTDATE, self.LISTDATE, self.SNAME
+                self.BONDCODE, self.CORRESCODE, self.SWAPSCODE, self.ZGJ, self.SWAPPRICE, self.ZQNEW, self.AISSUEVOL, self.STARTDATE, self.LISTDATE, ''
+        )
+
 class StockRtData:
     ST_UNSUBCRIBE = 0
     ST_SUBCRIBED = 1
@@ -800,6 +831,57 @@ class StockRtData:
                         res[int(line[0])] = DataReport(line[0], *line[2:11], year, quarter)
                     except:
                         pass
+                break
+            except Exception as e:
+                pass
+        return res
+
+
+    @staticmethod
+    def get_all_kzz(retry_count=3):
+        def check_header(h):
+            name_list = ['']
+            if len(h) == len(name_list) and min([ name in item for name, item in zip(name_list, h) ]):
+                return True
+
+        def decode2float(code, decode_map):
+            for d in decode_map:
+                code = code.replace(d[0], d[1])
+            return code
+
+        url = 'http://dcfm.eastmoney.com/em_mutisvcexpandinterface/api/js/get?type=KZZ_LB2.0&token=70f12f2f4f091e459a279469fe49eca5&js=var%20{jsname}={data:(x),font:(font)}'
+        res = []
+        for _ in range(retry_count):
+            time.sleep(0.01)
+            try:
+                r = requests.get(url)
+                html_text = r.content.decode('utf-8')
+                assert(len(html_text) > 512)
+                value_map_text = re.compile(r'\"FontMapping":\[\{.*?\}\]', re.DOTALL).findall(html_text)
+                assert(len(value_map_text) == 1)
+                js = json.loads(value_map_text[0][len('"FontMapping":'):])
+                decode_map = []
+                for j in js:
+                    decode_map.append((j['code'], str(j['value'])))
+
+                value_data = re.compile(r'data:.*?"}],font:', re.DOTALL).findall(html_text)
+                assert(len(value_data) == 1)
+                js_items = json.loads(value_data[0][len('data:'):-len('",font:')+1])
+
+                for item in js_items:
+                    res.append(DataKzz(
+                        item['BONDCODE'],
+                        item['SNAME'],
+                        item['MEMO'],
+                        item['CORRESCODE'],
+                        item['SWAPSCODE'],
+                        item['ZGJ'],
+                        item['SWAPPRICE'],
+                        decode2float(item['ZQNEW'], decode_map),
+                        decode2float(item['AISSUEVOL'], decode_map),
+                        item['STARTDATE'],
+                        item['LISTDATE'],
+                    ))
                 break
             except Exception as e:
                 pass

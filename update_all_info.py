@@ -92,7 +92,7 @@ def update_up_list(file_name='stock_update.list', nmc_name='v_nmc.db'):
     nmc = EnvParam(nmc_path).get()
     nmc = [(k, v) for k, v in nmc.items()]
     if isinstance(nmc, list):
-        nmc.sort(key=lambda x: x[1])
+        nmc.sort(key=lambda x: x[1], reverse=True)
         sbi = StocksBasicInfo()
         sbi_rec = StocksBasicInfo()
         sbi.load_from_file('stock_all.list')
