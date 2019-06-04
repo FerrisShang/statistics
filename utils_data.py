@@ -36,6 +36,7 @@ __all__ = [
     'StockData',
     'StockRtData',
     'DataKzz',
+    'DataKzzD',
     'StockUpdateRecord',
     'get_weekday',
     'html_get_tables',
@@ -652,30 +653,83 @@ class DataReport:
 class DataKzz:
     header = '债券代码  申购代码  正股代码  正股价  转股价  债现价   发行总量 发行时间  上市时间  债券简称'
 
-    def __init__(self, BONDCODE, SNAME, MEMO, CORRESCODE, SWAPSCODE, ZGJ, SWAPPRICE, ZQNEW, AISSUEVOL, STARTDATE, LISTDATE):
+    def __init__(self, BONDCODE, SNAME, MEMO, CORRESCODE, SWAPSCODE, ZGJ_HQ, SWAPPRICE, ZQNEW, AISSUEVOL, STARTDATE, LISTDATE):
 
-        (self.BONDCODE, self.SNAME, self.MEMO, self.CORRESCODE, self.SWAPSCODE, self.ZGJ, self.SWAPPRICE, self.ZQNEW, self.AISSUEVOL, self.STARTDATE, self.LISTDATE) = \
+        (self.BONDCODE, self.SNAME, self.MEMO, self.CORRESCODE, self.SWAPSCODE, self.ZGJ_HQ, self.SWAPPRICE, self.ZQNEW, self.AISSUEVOL, self.STARTDATE, self.LISTDATE) = \
             0, '', '', 0, 0, -1, -1, -1, -1, -1, -1
+        self.SNAME = SNAME
+        self.MEMO = MEMO
         try:
-            self.SNAME = SNAME
-            self.MEMO = MEMO
             self.BONDCODE = int(BONDCODE)
+        except: pass
+        try:
             self.CORRESCODE = int(CORRESCODE)
+        except: pass
+        try:
             self.SWAPSCODE = int(SWAPSCODE)
+        except: pass
+        try:
             self.STARTDATE = int(STARTDATE[2:4] + STARTDATE[5:7] + STARTDATE[8:10])
+        except: pass
+        try:
             self.LISTDATE = int(LISTDATE[2:4] + LISTDATE[5:7] + LISTDATE[8:10])
+        except: pass
+        try:
             self.SWAPPRICE = float(SWAPPRICE)
-            self.ZGJ = float(ZGJ)
+        except: pass
+        try:
+            self.ZGJ_HQ = float(ZGJ_HQ)
+        except: pass
+        try:
             self.ZQNEW = float(ZQNEW)
+        except: pass
+        try:
             self.AISSUEVOL = float(AISSUEVOL)
-        except Exception as e:
-            pass
+        except: pass
 
     def __str__(self):
         return '{:06d}   {:06d}   {:06d}  {:6.2f} {:6.2f}  {:6.2f}  {:6.2f}  {:06d}   {:06d}   {}' \
             .format(
-                # self.BONDCODE, self.CORRESCODE, self.SWAPSCODE, self.ZGJ, self.SWAPPRICE, self.STARTDATE, self.LISTDATE, self.SNAME
-                self.BONDCODE, self.CORRESCODE, self.SWAPSCODE, self.ZGJ, self.SWAPPRICE, self.ZQNEW, self.AISSUEVOL, self.STARTDATE, self.LISTDATE, ''
+                # self.BONDCODE, self.CORRESCODE, self.SWAPSCODE, self.ZGJ_HQ, self.SWAPPRICE, self.STARTDATE, self.LISTDATE, self.SNAME
+                self.BONDCODE, self.CORRESCODE, self.SWAPSCODE, self.ZGJ_HQ, self.SWAPPRICE, self.ZQNEW, self.AISSUEVOL, self.STARTDATE, self.LISTDATE, self.SNAME
+        )
+
+
+class DataKzzD:
+    header = '  日期    收盘价   纯债值   转股值   债溢价   股溢价   转股价   剩余份额'
+
+    def __init__(self, date, fclose, purebondvalue, swapvalue, swapor, purebondor, swapprice, syfe):
+        try:
+            t = datetime.datetime.fromtimestamp(int(date)//1000)
+            self.date = int(t.strftime('%Y%m%d')) % 1000000
+        except: self.date = 0
+        try:
+            self.fclose = float(fclose)
+        except: self.fclose = -1
+        try:
+            self.purebondvalue = float(purebondvalue)
+        except: self.purebondvalue = -1
+        try:
+            self.swapvalue = float(swapvalue)
+        except: self.swapvalue = -1
+        try:
+            self.swapor = float(swapor)
+        except: self.swapor = 0
+        try:
+            self.purebondor = float(purebondor)
+        except: self.purebondor = 0
+        try:
+            self.swapprice = float(swapprice)
+        except: self.swapprice = None
+        try:
+            self.syfe = float(syfe)
+        except: self.syfe = None
+
+    def __str__(self):
+        return '{:06d}   {:6.2f}  {:6.2f}  {:6.2f}  {:6.2f}  {:6.2f}  {}  {}'.format(
+            self.date, self.fclose, self.purebondor, self.swapvalue, self.swapor, self.purebondor,
+            '  -   ' if self.swapprice is None else '%6.2f' % self.swapprice,
+            ' -' if self.syfe is None else '%6.0f' % self.syfe
         )
 
 class StockRtData:
@@ -797,7 +851,7 @@ class StockRtData:
                 ret = r.content.decode(encoding='gbk')
                 if len(ret) < 128:
                     break
-                reg = re.compile(r'\,(.*?)\:')
+                reg = re.compile(r',(.*?):')
                 text = reg.sub(r',"\1":', ret).replace('"{symbol', '{"symbol').replace('{symbol', '{"symbol"')
                 js = json.loads(text)
                 for j in js:
@@ -839,11 +893,6 @@ class StockRtData:
 
     @staticmethod
     def get_all_kzz(retry_count=3):
-        def check_header(h):
-            name_list = ['']
-            if len(h) == len(name_list) and min([ name in item for name, item in zip(name_list, h) ]):
-                return True
-
         def decode2float(code, decode_map):
             for d in decode_map:
                 code = code.replace(d[0], d[1])
@@ -854,10 +903,10 @@ class StockRtData:
         for _ in range(retry_count):
             time.sleep(0.01)
             try:
-                r = requests.get(url)
-                html_text = r.content.decode('utf-8')
+                html_text = requests.get(url).content.decode('utf-8')
                 assert(len(html_text) > 512)
-                value_map_text = re.compile(r'\"FontMapping":\[\{.*?\}\]', re.DOTALL).findall(html_text)
+                # with open('tmp.txt', 'w') as f: f.write(html_text)
+                value_map_text = re.compile(r'\"FontMapping":\[{.*?}\]', re.DOTALL).findall(html_text)
                 assert(len(value_map_text) == 1)
                 js = json.loads(value_map_text[0][len('"FontMapping":'):])
                 decode_map = []
@@ -875,8 +924,8 @@ class StockRtData:
                         item['MEMO'],
                         item['CORRESCODE'],
                         item['SWAPSCODE'],
-                        item['ZGJ'],
-                        item['SWAPPRICE'],
+                        decode2float(item['ZGJ_HQ'], decode_map),
+                        decode2float(item['ZGJZGJ'], decode_map),
                         decode2float(item['ZQNEW'], decode_map),
                         decode2float(item['AISSUEVOL'], decode_map),
                         item['STARTDATE'],
@@ -886,6 +935,30 @@ class StockRtData:
             except Exception as e:
                 pass
         return res
+
+
+    @staticmethod
+    def get_kzz_kd(code, retry_count=3):
+        url = 'http://gwapi.eastmoney.com/2412/data/kzz_ls?appid=1258&tk=E72CC88D2D02FBB1D5576837B70B8B35&pagesize=8000&pageindex=1&order=asc&orderby=date&zcode=%06d'
+        code = code if isinstance(code, int) else int(code[-6:])
+        res = []
+        for _ in range(retry_count):
+            time.sleep(0.01)
+            try:
+                html_text = requests.get(url % code).content.decode('utf-8')
+                assert(len(html_text) > 512)
+                # with open('tmp.txt', 'w') as f: f.write(html_text)
+                js_items = json.loads(html_text)
+                for j in js_items['data']:
+                    res.append(DataKzzD(
+                        j['date'], j['fclose'], j['purebondvalue'], j['swapvalue'], j['swapor'],
+                        j['purebondor'], j['swapprice'], j['syfe']
+                    ))
+                break
+            except Exception as e:
+                pass
+        return res
+
 
 
     @staticmethod
