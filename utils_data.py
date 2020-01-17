@@ -100,7 +100,7 @@ class StockTradeStatus(IntEnum):
 
 
 class StockBasicInfo:
-    area = {'3': 'sz', '0': 'sz', '6': 'sh'}
+    area = {'3': 'sz', '0': 'sz', '6': 'sh', '1': 'sz', '5': 'sh'}
 
     def __init__(self, code, code_name, ipo_date, out_date, stock_type, status):
         self.code = code
@@ -1118,6 +1118,28 @@ class StockUpdateRecord:
             print('Get path failed.')
 
 
+def get_hist_data(code, start_time, end_time):
+    # http://68.push2his.eastmoney.com/api/qt/stock/details/get?fields1=f1,f2,f3,f4&fields2=f51,f52,f53,f54,f55&secid=105.NDAQ&pos=-30
+    KLINE_URL = 'http://push2his.eastmoney.com/api/qt/stock/kline/get?secid={}{}&fields1=f1&fields2=f51,f52,f53,f54,f55,f56,f57&klt=101&fqt=0&beg={}&end={}'
+    res = []
+    try:
+        t = ''
+        if len(code) == 6 and (code[0] == '5' or code[0] == '6'): t = '1.'
+        elif len(code) == 6 and (code[0] == '0' or code[0] == '1' or code[0] == '3'): t = '0.'
+        r = requests.get(KLINE_URL.format(t, code, start_time, end_time))
+        ret = r.content.decode(encoding='utf-8')
+        js = json.loads(ret)
+        if len(js['data']['klines']) > 0:
+            for d in js['data']['klines']:
+                res.append(DataD(*d.split(','), *['0' for _ in range(9)]))
+        else:
+            return None
+    except:
+        pass
+    finally:
+        return res
+
+
 class EnvParam:
     def __init__(self, file_name='env.db'):
         self.env = {}
@@ -1177,8 +1199,7 @@ class Date:
         delta = e - s
         return delta.days
 
-
+from utils import *
 if __name__ == '__main__':
-    res = StockRtData.get_all_ndrr('all')
-    for r in res:
-        print(r)
+    res = get_hist_data('105.NDAQ', '20000101', '20200101')
+    plt_plot([x.open for x in res])
