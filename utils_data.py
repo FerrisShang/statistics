@@ -1118,15 +1118,16 @@ class StockUpdateRecord:
             print('Get path failed.')
 
 
-def get_hist_data(code, start_time, end_time):
+def get_hist_data_online(code, start_time, end_time, fqt=1):
+    # fqt: 0,1,2: no,front,back
     # http://68.push2his.eastmoney.com/api/qt/stock/details/get?fields1=f1,f2,f3,f4&fields2=f51,f52,f53,f54,f55&secid=105.NDAQ&pos=-30
-    KLINE_URL = 'http://push2his.eastmoney.com/api/qt/stock/kline/get?secid={}{}&fields1=f1&fields2=f51,f52,f53,f54,f55,f56,f57&klt=101&fqt=0&beg={}&end={}'
+    KLINE_URL = 'http://push2his.eastmoney.com/api/qt/stock/kline/get?secid={}{}&fields1=f1&fields2=f51,f52,f53,f54,f55,f56,f57&klt=101&fqt={}&beg={}&end={}'
     res = []
     try:
         t = ''
         if len(code) == 6 and (code[0] == '5' or code[0] == '6'): t = '1.'
         elif len(code) == 6 and (code[0] == '0' or code[0] == '1' or code[0] == '3'): t = '0.'
-        r = requests.get(KLINE_URL.format(t, code, start_time, end_time))
+        r = requests.get(KLINE_URL.format(t, code, fqt, start_time, end_time))
         ret = r.content.decode(encoding='utf-8')
         js = json.loads(ret)
         if len(js['data']['klines']) > 0:
@@ -1176,6 +1177,38 @@ class EnvParam:
         return self
 
 
+def get_hist_data(code, start_time, end_time, fqt=1):
+    env_name = '.eastmoney.hist_data.cache'
+    env = EnvParam(env_name)
+    hist_name = str(code) + str(fqt)
+    hist_data = env.get(hist_name)
+    update_hist_flag = False
+    if hist_data is None or len(hist_data) < 2:
+        update_hist_flag = True
+        if len(env.env) > 32:
+            env.clear().save()
+    elif 20000000+hist_data[0].date_num > int(start_time) or 20000000+hist_data[-1].date_num < int(end_time):
+        update_hist_flag = True
+        env.delete(hist_name).save()
+        print('Update hist data: {} {}-{}'.format(code, start_time, end_time))
+    if update_hist_flag:
+        hist_data = get_hist_data_online(code,
+                                         20000000+Date.get_day(str(start_time)[2:], -10),
+                                         20000000+Date.get_day(str(end_time)[2:], 10),
+                                         fqt)
+        env.put(hist_data, hist_name).save()
+    s_idx = e_idx = 0
+    for i in range(len(hist_data)):
+        if hist_data[i].date_num >= int(start_time):
+            s_idx = i
+            break
+    for i in range(len(hist_data)-1, -1, -1):
+        if hist_data[i].date_num <= int(end_time):
+            e_idx = i
+            break
+    return hist_data[s_idx:e_idx]
+
+
 class Date:
     @staticmethod
     def get_now():
@@ -1201,5 +1234,5 @@ class Date:
 
 from utils import *
 if __name__ == '__main__':
-    res = get_hist_data('105.NDAQ', '20000101', '20200101')
+    res = get_hist_data('105.NDAQ', '20150101', '20200101')
     plt_plot([x.open for x in res])
