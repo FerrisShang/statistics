@@ -43,6 +43,8 @@ __all__ = [
     'Stock',
     'EnvParam',
     'Date',
+    'get_hist_data',
+    'CHistCache',
 ]
 
 
@@ -1127,7 +1129,7 @@ def get_hist_data_online(code, start_time, end_time, fqt=1):
         t = ''
         if len(code) == 6 and (code[0] == '5' or code[0] == '6'): t = '1.'
         elif len(code) == 6 and (code[0] == '0' or code[0] == '1' or code[0] == '3'): t = '0.'
-        r = requests.get(KLINE_URL.format(t, code, fqt, start_time, end_time))
+        r = requests.get(KLINE_URL.format(t, code, fqt, '20%06d' % int(start_time), '20%06d' % int(end_time)))
         ret = r.content.decode(encoding='utf-8')
         js = json.loads(ret)
         if len(js['data']['klines']) > 0:
@@ -1177,37 +1179,66 @@ class EnvParam:
         return self
 
 
-def get_hist_data(code, start_time, end_time, fqt=1):
-    env_name = '.eastmoney.hist_data.cache'
+def get_hist_data(code, start_time, end_time, fqt=1, force_update=False):
+    env_name = '.cache'
     env = EnvParam(env_name)
     hist_name = str(code) + str(fqt)
     hist_data = env.get(hist_name)
-    update_hist_flag = False
+    update_hist_flag = force_update
+    min_start = 999999
+    max_end = 0
     if hist_data is None or len(hist_data) < 2:
         update_hist_flag = True
-        if len(env.env) > 64:
+        if len(env.env) > 32:
             env.clear().save()
-    elif 20000000+hist_data[0].date_num > int(start_time) or 20000000+hist_data[-1].date_num < int(end_time):
+    elif hist_data[0].date_num > int(start_time) or hist_data[-1].date_num < int(end_time):
         update_hist_flag = True
+        min_start = hist_data[0].date_num
+        max_end = hist_data[-1].date_num
         env.delete(hist_name).save()
     if update_hist_flag:
-        hist_data = get_hist_data_online(code, 20100101, 20210101, fqt)
+        hist_data = get_hist_data_online(code, Date.get_day(min(min_start, int(start_time)), -10),
+                                         max(max_end, int(end_time)), fqt)
         env.put(hist_data, hist_name).save()
         if len(hist_data) > 0:
             print('Update hist data: {} {}-{} (get {} items {}-{})'.format(
                 code, start_time, end_time, len(hist_data), hist_data[0].date_num, hist_data[-1].date_num))
         else:
             print('Update hist data: {} {}-{} (No data found)')
-    s_idx = e_idx = 0
+    s_idx = 0
+    e_idx = len(hist_data)
     for i in range(len(hist_data)):
-        if 20000000+hist_data[i].date_num >= int(start_time):
+        if hist_data[i].date_num >= int(start_time):
             s_idx = i
             break
     for i in range(len(hist_data)-1, -1, -1):
-        if 20000000+hist_data[i].date_num <= int(end_time):
-            e_idx = i
+        if hist_data[i].date_num <= int(end_time):
+            e_idx = i + 1
             break
     return hist_data[s_idx:e_idx]
+
+
+class CHistCache:
+    def __init__(self, env_name='.cache'):
+
+        self.env = EnvParam(env_name)
+
+    def get(self, code, start_time, end_time, fqt=1):
+        hist_name = str(code) + str(fqt)
+        hist_data = self.env.get(hist_name)
+        if hist_data is None or len(hist_data) < 2:
+            return []
+        s_idx = 0
+        e_idx = len(hist_data)
+        for i in range(len(hist_data)):
+            if hist_data[i].date_num >= int(start_time):
+                s_idx = i
+                break
+        for i in range(len(hist_data)-1, -1, -1):
+            if hist_data[i].date_num <= int(end_time):
+                e_idx = i + 1
+                break
+        return hist_data[s_idx:e_idx]
 
 
 class Date:
@@ -1235,5 +1266,5 @@ class Date:
 
 from utils import *
 if __name__ == '__main__':
-    res = get_hist_data('105.NDAQ', '20150101', '20200101')
+    res = get_hist_data('105.NDAQ', '150101', '200101')
     plt_plot([x.open for x in res])
