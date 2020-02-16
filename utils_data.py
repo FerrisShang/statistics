@@ -1185,25 +1185,26 @@ def get_hist_data(code, start_time, end_time, fqt=1):
     update_hist_flag = False
     if hist_data is None or len(hist_data) < 2:
         update_hist_flag = True
-        if len(env.env) > 32:
+        if len(env.env) > 64:
             env.clear().save()
     elif 20000000+hist_data[0].date_num > int(start_time) or 20000000+hist_data[-1].date_num < int(end_time):
         update_hist_flag = True
         env.delete(hist_name).save()
-        print('Update hist data: {} {}-{}'.format(code, start_time, end_time))
     if update_hist_flag:
-        hist_data = get_hist_data_online(code,
-                                         20000000+Date.get_day(str(start_time)[2:], -10),
-                                         20000000+Date.get_day(str(end_time)[2:], 10),
-                                         fqt)
+        hist_data = get_hist_data_online(code, 20100101, 20210101, fqt)
         env.put(hist_data, hist_name).save()
+        if len(hist_data) > 0:
+            print('Update hist data: {} {}-{} (get {} items {}-{})'.format(
+                code, start_time, end_time, len(hist_data), hist_data[0].date_num, hist_data[-1].date_num))
+        else:
+            print('Update hist data: {} {}-{} (No data found)')
     s_idx = e_idx = 0
     for i in range(len(hist_data)):
-        if hist_data[i].date_num >= int(start_time):
+        if 20000000+hist_data[i].date_num >= int(start_time):
             s_idx = i
             break
     for i in range(len(hist_data)-1, -1, -1):
-        if hist_data[i].date_num <= int(end_time):
+        if 20000000+hist_data[i].date_num <= int(end_time):
             e_idx = i
             break
     return hist_data[s_idx:e_idx]
